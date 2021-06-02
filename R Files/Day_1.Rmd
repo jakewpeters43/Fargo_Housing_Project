@@ -12,7 +12,7 @@ library(tidyverse)
 
 
 ```{r}
-FM_Housing_Raw <- read_csv(unz("FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+FM_Housing_Raw <- read_csv(unz("./Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Directions` = col_character(),
   `Water Frontage Length` = col_integer()
