@@ -1,0 +1,38 @@
+---
+title: "FM_Housing"
+author: "Alex Voigt & Jake Peters"
+date: "6/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer()
+))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number")) #Arbitrary values not useful for data mining
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Water Frontage Length" = parse_number("Water Frontage Length", na=character()))
+```
+
+```{r}
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Original List Price`), bins=250)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price`), bins=250)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold Price`), bins=250)
+
+median(na.omit(FM_Housing_Clean$`Sold Price`))
+median(FM_Housing_Clean$`List Price`)
+median(FM_Housing_Clean$`Sold Price`)
+
+ggplot(data=FM_Housing_Clean) + geom_bar(mapping=aes(x=`Style`))
+```
