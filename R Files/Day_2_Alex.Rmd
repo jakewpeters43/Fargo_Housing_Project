@@ -1,0 +1,41 @@
+---
+title: "FM_Housing Workspace - Alex"
+author: "Alex Voigt"
+date: "6/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer(),
+  `Year Built` = col_date(format="%Y")
+))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price`-`Original List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
+
+```
+
+```{r}
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Original List Price`), bins=200)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price`), bins=200)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold Price`), bins=200)
+
+median(na.omit(FM_Housing_Clean$`Original List Price`))
+median(FM_Housing_Clean$`List Price`)
+median(FM_Housing_Clean$`Sold Price`)
+```
+
