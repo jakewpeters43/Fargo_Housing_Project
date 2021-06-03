@@ -76,5 +76,12 @@ Houses_On_Market <- Houses_On_Market %>% rowwise() %>% mutate("Houses on Market"
 FM_Housing_Clean <- left_join(FM_Housing_Clean, Houses_On_Market, by=c("Pended Date" = "Date"))
 ```
 
+```{r}
+Houses_On_Market %>% filter(`Date` > as.Date("2015-01-01") & `Date` < as.Date("2020-01-01")) %>% ggplot() + geom_point(mapping=aes(x=`Date`, y=`Houses on Market`))
+```
+```{r}
+FM_Housing_Clean %>% filter(`Pended Date` > as.Date("2017-10-01") & `Start Date` < as.Date("2017-10-01")) %>% ggplot() + geom_bar(aes(`City`))
 
+ggplot(data=FM_Housing_Clean) + geom_bar(aes(`City`))
+```
 
