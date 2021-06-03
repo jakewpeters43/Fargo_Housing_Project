@@ -15,14 +15,14 @@ library(tidyverse)
 FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Directions` = col_character(),
-  `Water Frontage Length` = col_integer(),
-  `Year Built` = col_date(format="%Y")
+  `Water Frontage Length` = col_integer()
 ))
 ```
 
 ```{r}
 FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
+FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price`-`Original List Price`)
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
@@ -30,12 +30,51 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Differ
 ```
 
 ```{r}
-ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Original List Price`), bins=200)
-ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price`), bins=200)
-ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold Price`), bins=200)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Original List Price`), binwidth=10000)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price`), binwidth=10000)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold Price`), binwidth=10000)
 
 median(na.omit(FM_Housing_Clean$`Original List Price`))
 median(FM_Housing_Clean$`List Price`)
 median(FM_Housing_Clean$`Sold Price`)
+
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price Change`), binwidth=10000)
+ggplot(data=FM_Housing_Clean[which(FM_Housing_Clean$`List Price Change`!=0),]) + geom_histogram(mapping=aes(x=`List Price Change`), binwidth=10000)
+
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold/List Price Difference`), binwidth=10000)
+
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold/Original List Price Difference`), binwidth=10000)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(y=`Sold/Original List Price Difference`, x=`Days on Market`), alpha=0.1) + xlim(0, 1250) + ylim(-200000, 200000)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Days on Market`, y=`List Price Change`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Original List Price`, y=`List Price Change`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`List Price`, y=`List Price Change`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Original List Price`, y=`Days on Market`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`List Price`, y=`Days on Market`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Sold Price`, y=`Days on Market`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Sold/List Price Difference`, y=`Days on Market`), alpha=0.1)
 ```
+
+```{r}
+ggplot() + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` <= 500000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=`Sold Price`)) + scale_color_gradient(low="yellow",high="red") + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` > 500000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`), size=0.5) + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+```
+
+```{r}
+getHousesOnMarket <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(`Start Date` <= currentDate & `Pended Date` >= currentDate)))
+}
+
+Houses_On_Market <- data.frame("Date"=seq(as.Date("2001-05-01"), as.Date("2021-03-01"), by="days"))
+Houses_On_Market <- Houses_On_Market %>% rowwise() %>% mutate("Houses on Market" = getHousesOnMarket(Date))
+FM_Housing_Clean <- left_join(FM_Housing_Clean, Houses_On_Market, by=c("Pended Date" = "Date"))
+```
+
+
 
