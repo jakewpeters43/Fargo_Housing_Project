@@ -1,0 +1,138 @@
+---
+title: "FM_Housing"
+author: "Alex Voigt & Jake Peters"
+date: "6/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+library(googleway)
+library(ggplot2)
+library(ggrepel)
+library(ggspatial)
+library(lwgeom)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(rgeos)
+library(maps)
+```
+
+install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", 
+"ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata"))
+
+
+install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", 
+"ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata"))
+```{r}
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer()
+))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number")) #Arbitrary values not useful for data mining
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Water Frontage Length" = parse_number("Water Frontage Length", na=character()))
+```
+
+```{r}
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Original List Price`), bins=250)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price`), bins=250)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold Price`), bins=250)
+
+median(na.omit(FM_Housing_Clean$`Sold Price`))
+median(FM_Housing_Clean$`List Price`)
+median(FM_Housing_Clean$`Sold Price`)
+
+ggplot(data=FM_Housing_Clean) + geom_bar(mapping=aes(x=`Style`))
+```
+
+
+```{r}
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping = aes(x= `Original List Price`, y = `Sold Price`))
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping = aes(x= `Original List Price`, y = `List Price`))
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping = aes(x= `List Price`, y = `Sold Price`))
+
+```
+```{r}
+ggplot(data=FM_Housing_Clean) + geom_jitter(mapping = aes(x= `Total SqFt.`, y = `Style`))
+ggplot(data=FM_Housing_Clean) + geom_jitter(mapping = aes(x= `Year Built`, y = `Style`))
+ggplot(data=FM_Housing_Clean) + geom_bin2d(mapping = aes(x= `Year Built`, y =`Style`))
+ggplot(data=FM_Housing_Clean) + geom_blank(mapping = aes(x= `Year Built`, y =`Style`))
+ggplot(data=FM_Housing_Clean) + geom_boxplot(mapping = aes(x= `Year Built`, y =`Style`))
+ggplot(data=FM_Housing_Clean) + geom_col(mapping = aes(x= `Year Built`, y =`Style`))
+ggplot(data=FM_Housing_Clean) + geom_count(mapping = aes(x= `Year Built`, y =`Style`))
+ggplot(data=FM_Housing_Clean) + geom_curve(mapping = aes(xend = `Geo Lat`, x = `Geo Lon`, y = `Original List Price`, yend = `Sold Price`))
+
+
+
+
+
+
+
+```
+```{r}
+ggplot(data = FM_Housing_Clean) + geom
+
+
+
+```
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+counties <- st_as_sf(map("county", plot = FALSE, fill = TRUE))
+#counties <- subset(counties, grepl("florida", counties$ID))
+counties$area <- as.numeric(st_area(counties))
+head(counties)
+#(sites <- data.frame(longitude = c(-80.144005, -80.109), latitude = c(26.479005, 
+ #   26.83)))
+
+sites <- (FM_Housing_Clean) %>% select(c(`Geo Lon`, `Geo Lat`))
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = FM_Housing_Clean, aes(x = `Geo Lon`, y = `Geo Lat`, color = `City`, size = `Sold Price`), 
+        shape = 21, alpha = .7) +
+    geom_sf(data = counties, fill = NA, color = gray(.5)) +
+    coord_sf(ylim = c(46.75, 46.95), xlim=c(-96.95, -96.7), expand = FALSE)
+  
+#sites
+```
+```{r}
+sites <- st_as_sf(sites, coords = c(`Geo Lon`, `Geo Lat`), 
+    crs = 4326, agr = "constant")
+
+## Simple feature collection with 2 features and 0 fields
+## geometry type:  POINT
+## dimension:      XY
+## bbox:           xmin: -80.14401 ymin: 26.479 xmax: -80.109 ymax: 26.83
+## epsg (SRID):    4326
+## proj4string:    +proj=longlat +datum=WGS84 +no_defs
+##                     geometry
+## 1 POINT (-80.14401 26.47901)
+## 2      POINT (-80.109 26.83)
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = sites, size = 4, shape = 23, fill = "darkred") +
+    coord_sf(xlim = c(-88, -78), ylim = c(24.5, 33), expand = FALSE)
+
+
+```
+
+```{r}
+ggplot(data =FM_Housing_Clean) + geom_point(mapping = aes(x=`Geo Lat`, y=`Geo Lon`))
+
+
+```
+
