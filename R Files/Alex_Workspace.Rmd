@@ -116,12 +116,12 @@ getHousesOnMarket <- function(rowNumber, milesRadius, usePended) {
   return(c(nrow(Global_Market),nrow(Local_Market)))
 }
 
-Markets_List <- c()
+Markets_List <- as.data.frame(matrix(data=NA, nrow=nrow(FM_Housing_Clean), ncol=2))
 for(n in 1:nrow(FM_Housing_Clean)) {
-  Markets_List <- Markets_List %>% rbind(getHousesOnMarket(n, 1, FALSE))
+  Markets_List[n,] <- getHousesOnMarket(n, 1, FALSE)
 }
 FM_Housing_Clean <- FM_Housing_Clean %>% cbind(Markets_List)
-FM_Housing_Clean <- FM_Housing_Clean %>% rename("Houses on Global Market at Start" = `1`, "Houses on Local Market at Start" = `2`)
+FM_Housing_Clean <- FM_Housing_Clean %>% rename("Houses on Global Market at Start" = `V1`, "Houses on Local Market at Start" = `V2`)
 
 # 2:46 to run
 ```
@@ -136,4 +136,13 @@ FM_Housing_Clean %>% filter(`Pended Date` > as.Date("2017-10-01") & `Start Date`
 
 ggplot(data=FM_Housing_Clean) + geom_bar(aes(`City`))
 ```
+
+```{r}
+ggplot() + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` <= 700000) & FM_Housing_Clean$`Sold Price` > 10000,], mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=log(`Sold Price`)))+ scale_color_gradient(low="yellow",high="red") + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` > 700000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`), size=0.5) + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+```
+
+```{r}
+ggplot(FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` <= 500000) & FM_Housing_Clean$`Sold Price` >= 10000,]) + geom_histogram(mapping=aes(x=log(`Sold Price`), base=1.1))
+```
+
 
