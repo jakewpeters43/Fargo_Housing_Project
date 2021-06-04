@@ -63,7 +63,7 @@ ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Sold/List Price Differ
 ```
 
 ```{r}
-ggplot() + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` <= 500000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=`Sold Price`)) + scale_color_gradient(low="yellow",high="red") + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` > 500000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`), size=0.5) + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+ggplot() + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` <= 700000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=`Sold Price`)) + scale_color_gradient(low="yellow",high="red") + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` > 700000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`), size=0.5) + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
 ```
 
 ```{r}
@@ -73,8 +73,60 @@ getHousesOnMarket <- function(currentDate) {
 
 Houses_On_Market <- data.frame("Date"=seq(as.Date("2001-05-01"), as.Date("2021-03-01"), by="days"))
 Houses_On_Market <- Houses_On_Market %>% rowwise() %>% mutate("Houses on Market" = getHousesOnMarket(Date))
-FM_Housing_Clean <- left_join(FM_Housing_Clean, Houses_On_Market, by=c("Pended Date" = "Date"))
+FM_Housing_Clean <- left_join(FM_Housing_Clean, Houses_On_Market, by=c("Start Date" = "Date")) %>% rename("Houses on Market at Start" = "Houses on Market")
+FM_Housing_Clean <- left_join(FM_Housing_Clean, Houses_On_Market, by=c("Pended Date" = "Date")) %>% rename("Houses on Market at Pended" = "Houses on Market")
+
+getHousesOnLocalMarket <- function(currentDate, currentLon, currentLat, milesRadius) {
+  return(nrow(FM_Housing_Clean %>% filter(
+    `Start Date` <= currentDate &
+    `Pended Date` >= currentDate &
+    `Geo Lon` >= currentLon-.0185*milesRadius &
+    `Geo Lon` <= currentLon+.0185*milesRadius &
+    `Geo Lat` >= `Geo Lat`-.0145*milesRadius &
+    `Geo Lat` <= currentLat+.0145*milesRadius)))
+}
+
+FM_Housing_Clean <- FM_Housing_Clean %>% rowwise() %>% mutate("Houses on Local Market at Start" = getHousesOnLocalMarket(`Start Date`, `Geo Lon`, `Geo Lat`, 1))
+
+# 2:42 to run
 ```
+
+```{r}
+getHousesOnMarket <- function(rowNumber, milesRadius, usePended) {
+  if (usePended) {
+    thisDate <- FM_Housing_Clean[rowNumber,]$`Pended Date`
+  } else {
+    thisDate <- FM_Housing_Clean[rowNumber,]$`Start Date`
+  }
+  
+  Global_Market <- FM_Housing_Clean %>% filter(
+    `Start Date` <= thisDate &
+    `Pended Date` >= thisDate
+  )
+  
+  thisLon <- FM_Housing_Clean[rowNumber,]$`Geo Lon`
+  thisLat <- FM_Housing_Clean[rowNumber,]$`Geo Lat`
+  
+  Local_Market <- Global_Market %>% filter(
+    `Geo Lon` >= thisLon-.0185*milesRadius &
+    `Geo Lon` <= thisLon+.0185*milesRadius &
+    `Geo Lat` >= thisLat-.0145*milesRadius &
+    `Geo Lat` <= thisLat+.0145*milesRadius
+  )
+  return(c(nrow(Global_Market),nrow(Local_Market)))
+}
+
+Markets_List <- c()
+for(n in 1:nrow(FM_Housing_Clean)) {
+  Markets_List <- Markets_List %>% rbind(getHousesOnMarket(n, 1, FALSE))
+}
+FM_Housing_Clean <- FM_Housing_Clean %>% cbind(Markets_List)
+FM_Housing_Clean <- FM_Housing_Clean %>% rename("Houses on Global Market at Start" = `1`, "Houses on Local Market at Start" = `2`)
+
+# 2:46 to run
+```
+  
+  return(list(nrow(Global_Market), nrow(Local_Market)))
 
 ```{r}
 Houses_On_Market %>% filter(`Date` > as.Date("2015-01-01") & `Date` < as.Date("2020-01-01")) %>% ggplot() + geom_point(mapping=aes(x=`Date`, y=`Houses on Market`))
