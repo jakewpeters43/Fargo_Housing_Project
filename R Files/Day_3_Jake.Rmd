@@ -1,0 +1,157 @@
+---
+title: "FM_Housing Workspace - Alex"
+author: "Alex Voigt"
+date: "6/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer()
+))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
+FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price`-`Original List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
+
+```
+
+```{r}
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Original List Price`), binwidth=10000)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price`), binwidth=10000)
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold Price`), binwidth=10000)
+
+median(na.omit(FM_Housing_Clean$`Original List Price`))
+median(FM_Housing_Clean$`List Price`)
+median(FM_Housing_Clean$`Sold Price`)
+
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`List Price Change`), binwidth=10000)
+ggplot(data=FM_Housing_Clean[which(FM_Housing_Clean$`List Price Change`!=0),]) + geom_histogram(mapping=aes(x=`List Price Change`), binwidth=10000)
+
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold/List Price Difference`), binwidth=10000)
+
+ggplot(data=FM_Housing_Clean) + geom_histogram(mapping=aes(x=`Sold/Original List Price Difference`), binwidth=10000)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(y=`Sold/Original List Price Difference`, x=`Days on Market`), alpha=0.1) + xlim(0, 1250) + ylim(-200000, 200000)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Days on Market`, y=`List Price Change`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Original List Price`, y=`List Price Change`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`List Price`, y=`List Price Change`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Original List Price`, y=`Days on Market`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`List Price`, y=`Days on Market`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Sold Price`, y=`Days on Market`), alpha=0.1)
+
+ggplot(data=FM_Housing_Clean) + geom_point(mapping=aes(x=`Sold/List Price Difference`, y=`Days on Market`), alpha=0.1)
+```
+
+```{r}
+ggplot() + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` <= 500000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=`Sold Price`)) + scale_color_gradient(low="yellow",high="red") + geom_point(data=FM_Housing_Clean[which(FM_Housing_Clean$`Sold Price` > 500000),], mapping=aes(x=`Geo Lon`, y=`Geo Lat`), size=0.5) + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+```
+
+```{r}
+getHousesOnMarket <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(`Start Date` <= currentDate & `Pended Date` >= currentDate)))
+}
+
+Houses_On_Market <- data.frame("Date"=seq(as.Date("2001-05-01"), as.Date("2021-03-01"), by="days"))
+Houses_On_Market <- Houses_On_Market %>% rowwise() %>% mutate("Houses on Market" = getHousesOnMarket(Date))
+FM_Housing_Clean <- left_join(FM_Housing_Clean, Houses_On_Market, by=c("Pended Date" = "Date"))
+
+```
+
+
+```{r}
+#ggplot(data = FM_Housing_Clean) %>%
+Houses_On_Market %>% filter(`Date` > as.Date("2015-01-01") & `Date` < as.Date("2020-01-01")) %>% ggplot() + geom_point(mapping = aes(x=`Date`, y = `Houses_On_Market`))
+
+
+
+FM_Housing_Clean %>% filter(`Pended Date` > as.Date("2017-10-01") & `Start Date` < as.Date("2017-10-01")) %>% ggplot() + geom_bar(aes(`City`))
+
+
+check <- function(x){
+  if(x>0){
+    result<-  "positive"
+  }
+   else if(x<0){
+      result <- "NEGATIVE"
+   }
+    else{
+      result <- "zero"
+    }
+  result
+    }
+check(0)
+  
+check1 <- function(x){
+  if(x>0){
+    return("positive")
+    
+  }
+  else if(x<0){
+    return("negative")
+  }
+  else{
+    return("zero")
+  }
+}
+check1(1110)
+
+
+multi_return <- function(){
+  my_list <- list("color" = "red", "size" = 25, "shape" = "round")
+  return(my_list)
+  
+}
+a <- multi_return()
+a$color
+a$size
+```
+```{r}
+# Determine number of clusters
+
+wss <- (nrow(FM_Housing_Clean)-1)*sum(apply(FM_Housing_Clean,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(FM_Housing_Clean,
+   centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares")
+
+
+
+
+```
+```{r}
+#FM_Housing_Clean
+# K-Means Cluster Analysis
+kmeans(FM_Housing_Clean$`Geo Lat`[!is.na(FM_Housing_Clean$`Geo Lat`)], 3)        # Remove NA values
+km_cluster <- kmeans(na.omit(FM_Housing_Clean$`Geo Lat`), 10)
+km_cluster
+km_cluster$withinss
+km_cluster$tot.withinss/km_cluster$betweenss
+# 5 cluster solution
+# get cluster means
+aggregate(FM_Housing_Clean$`Geo Lat`,by=list(km_cluster$cluster),FUN=mean)
+# append cluster assignment
+FM_Housing_Clean <- data.frame(FM_Housing_Clean, fit$cluster)
+
+
+```
+
