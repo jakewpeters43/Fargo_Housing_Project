@@ -61,6 +61,7 @@ FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster))
 ```{r}
 
 ggplot() + geom_point(data=FM_Housing_Clean_Omit, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Omit$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+ggplot(data = FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`),color=FM_Housing_Clean_Omit$`cluster`)  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
 
 
 ```
