@@ -47,18 +47,16 @@ fit <- FM_Housing_Clean_Omit %>% select(logprice, milelong, milelat) %>% Kmeans(
 FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster)) %>% rename("cluster" = `as.factor(fit$cluster)`)
 
 ```
-<<<<<<< Updated upstream
+
 ```{r}
 
 ggplot() + geom_point(data=FM_Housing_Clean_Omit, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Omit$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
 ggplot(data = FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`),color=FM_Housing_Clean_Omit$`cluster`)  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
-=======
->>>>>>> Stashed changes
+```
 
 ```{r}
 ggplot(data=FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=milelong, y=milelat, colour=cluster)) + xlim(3,19) + ylim(42,70)
 
 ggplot(data=FM_Housing_Clean_Omit[which(FM_Housing_Clean_Omit$`Sold Price` <= 700000 & FM_Housing_Clean_Omit$`Sold Price` > 10000),]) + geom_point(mapping=aes(x=milelong, y=milelat, color=logprice)) + scale_color_continuous(low="yellow", high="red") + facet_wrap(~cluster)+ xlim(3,19) + ylim(42,70)
-```
 ```
 
