@@ -1,0 +1,85 @@
+---
+title: "FM_Housing Workspace - Jake"
+author: "Alex Voigt & Jake Peters"
+date: "6/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(amap)
+library(gtools)
+```
+
+
+```{r}
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer()
+))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
+FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price`-`Original List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
+
+```
+
+
+
+```{r}
+# kmeans Clustering with just sold price
+FM_Housing_kmeans <- FM_Housing_Clean %>% mutate(logprice = log(`Sold Price`, base = 1.1)) #%>% mutate()
+
+# K-Means Cluster Analysis
+fit <- Kmeans(FM_Housing_kmeans$`logprice`, 21, nstart = 2, method = "manhattan") # 21 cluster solution
+# get cluster means
+aggregate(FM_Housing_kmeans$`logprice`,by=list(fit$cluster),FUN=mean)
+# append cluster assignment
+FM_Housing_kmeans$`logprice` <- data.frame(FM_Housing_kmeans$`logprice`, fit$cluster)
+
+fit
+FM_Housing_kmeans <- FM_Housing_kmeans %>% cbind(as.factor(fit$cluster)) %>% rename("cluster" = `as.factor(fit$cluster)`)
+
+
+
+
+```
+
+
+
+```{r}
+ggplot() + geom_point(data=FM_Housing_Clean, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+
+
+```
+
+```{r}
+# kmeans Clustering with three variables
+FM_Housing_kmeans2 <- FM_Housing_Clean_Omit %>% mutate(logprice = log(`Sold Price`, base = 1.1)) %>% mutate(milelong = (`Geo Lon`+97)/.0185) %>% mutate(milelat = (`Geo Lat` -46)/.0145) %>% select(logprice, milelong, milelat)
+FM_Housing_kmeans2
+
+FM_Housing_Clean_Omit <- FM_Housing_Clean %>% filter(!is.na(`Geo Lon`) & !is.na(`Geo Lat`))
+
+fit <- Kmeans(FM_Housing_kmeans2, 21, nstart = 2, method = "manhattan") # 21 cluster solution
+# get cluster means
+aggregate(FM_Housing_kmeans2,by=list(fit$cluster),FUN=mean)
+# append cluster assignment
+FM_Housing_kmeans2 <- data.frame(FM_Housing_kmeans2, fit$cluster)
+
+fit
+FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster)) %>% rename("cluster" = `as.factor(fit$cluster)`)
+
+```
+```{r}
+
+ggplot() + geom_point(data=FM_Housing_Clean_Omit, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Omit$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+
+
+```
