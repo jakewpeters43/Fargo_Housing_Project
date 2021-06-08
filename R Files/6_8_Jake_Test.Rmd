@@ -11,6 +11,7 @@ library(tidyverse)
 library(amap)
 library(gtools)
 library(useful)
+library(cluster)
 ```
 
 
@@ -36,8 +37,9 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Differ
 ```{r}
 # kmeans Clustering with three variables
 FM_Housing_Clean_Omit <- FM_Housing_Clean %>% filter(!is.na(`Geo Lon`) & !is.na(`Geo Lat`))
-FM_Housing_kmeans2 <- FM_Housing_Clean_Omit %>% mutate(logprice = log(`Sold Price`, base = 1.1)) %>% mutate(milelong = (`Geo Lon`+97)/.0185) %>% mutate(milelat = (`Geo Lat` -46)/.0145) %>% select(logprice, milelong, milelat)
+FM_Housing_kmeans2 <- FM_Housing_Clean_Omit %>% mutate(logprice = log(`Sold Price`, base = 1.8)) %>% mutate(milelong = (`Geo Lon`+97)/.0185) %>% mutate(milelat = (`Geo Lat` -46)/.0145) %>% select(logprice, milelong, milelat)
 FM_Housing_kmeans2
+```
 # K-Means Cluster Analysis
 #sum(is.na(FM_Housing_kmeans2))
 #is.na(FM_Housing_kmeans2)
@@ -48,7 +50,7 @@ FM_Housing_kmeans2
 #na.replace(FM_Housing_Clean$`Geo Lon`, mean(FM_Housing_Clean$`Geo Lon`))
 #FM_Housing_Clean_Means <- na.replace(FM_Housing_Clean$`Geo Lat`, mean(FM_Housing_Clean$`Geo Lat`))
 
-
+```{r}
 fit <- Kmeans(FM_Housing_kmeans2, 21, nstart = 2, method = "manhattan") # 21 cluster solution
 # get cluster means
 aggregate(FM_Housing_kmeans2,by=list(fit$cluster),FUN=mean)
@@ -63,6 +65,46 @@ FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster))
 
 ggplot() + geom_point(data=FM_Housing_Clean_Omit, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Omit$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
 ggplot(data = FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`),color=FM_Housing_Clean_Omit$`cluster`)  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
+```
 
+```{r}
+
+
+
+#pam(FM_Housing_kmeans2, 21, metric = "euclidean", stand = FALSE)
+clarax <- clara(FM_Housing_kmeans2, 70, samples=50)
+clarax
+```
+```{r}
+## Try 100 times *different* random samples -- for reliability:
+nSim <- 100
+nCl <- 3 # = no.classes
+set.seed(421)# (reproducibility)
+cl <- matrix(NA,nrow(xclara), nSim)
+for(i in 1:nSim)
+   cl[,i] <- clara(xclara, nCl, medoids.x = FALSE, rngR = TRUE)$cluster
+tcl <- apply(cl,1, tabulate, nbins = nCl)
+## those that are not always in same cluster (5 out of 3000 for this seed):
+(iDoubt <- which(apply(tcl,2, function(n) all(n < nSim))))
+if(length(iDoubt)) { # (not for all seeds)
+  tabD <- tcl[,iDoubt, drop=FALSE]
+  dimnames(tabD) <- list(cluster = paste(1:nCl), obs = format(iDoubt))
+  t(tabD) # how many times in which clusters
+}
+# }
 
 ```
+
+```{r}
+#plot(clarax, ask = FALSE)
+## plot clusters
+#plot(x, col = clarax$cluster)
+## plot centers
+#points(clarax$centers, col = 1:2, pch = 8)
+FM_Housing_Clean_Clara <- FM_Housing_Clean_Omit %>% cbind(as.factor(clarax$cluster)) %>% rename("cluster" = `as.factor(clarax$cluster)`)
+
+ggplot() + geom_point(data=FM_Housing_Clean_Clara, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Clara$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+FM_Housing_Clean_Clara %>% filter(`Sold Price` >= 10000 & `Sold Price` <= 700000) %>% ggplot() + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`,color=`Sold Price`))  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
+
+```
+
