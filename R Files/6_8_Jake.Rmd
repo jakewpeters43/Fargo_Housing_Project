@@ -1,0 +1,64 @@
+---
+title: "FM_Housing Workspace - Jake"
+author: "Alex Voigt & Jake Peters"
+date: "6/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(amap)
+library(gtools)
+library(useful)
+```
+
+
+```{r}
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer()
+))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
+FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price`-`Original List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
+
+```
+
+
+```{r}
+# kmeans Clustering with three variables
+FM_Housing_Clean_Omit <- FM_Housing_Clean %>% filter(!is.na(`Geo Lon`) & !is.na(`Geo Lat`))
+FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% mutate(logprice = log(`Sold Price`, base = 1.25)) %>% mutate(milelong = (`Geo Lon`+97)/.0185) %>% mutate(milelat = (`Geo Lat` -46)/.0145) %>% mutate(scaledSqFt = 0.001*`Total SqFt.`) 
+
+#getFit <- FM_Housing_Clean_Omit %>% select(logprice, milelong, milelat) %>% FitKMeans(max.clusters=30, nstart=15)
+
+fit <- FM_Housing_Clean_Omit %>% select(logprice, milelong, milelat) %>% Kmeans(27, nstart=25, method="euclidean")
+
+#PlotHartigan(getFit)
+
+FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster)) %>% rename("cluster" = `as.factor(fit$cluster)`)
+
+```
+<<<<<<< Updated upstream
+```{r}
+
+ggplot() + geom_point(data=FM_Housing_Clean_Omit, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Omit$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+ggplot(data = FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`),color=FM_Housing_Clean_Omit$`cluster`)  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
+=======
+>>>>>>> Stashed changes
+
+```{r}
+ggplot(data=FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=milelong, y=milelat, colour=cluster)) + xlim(3,19) + ylim(42,70)
+
+ggplot(data=FM_Housing_Clean_Omit[which(FM_Housing_Clean_Omit$`Sold Price` <= 700000 & FM_Housing_Clean_Omit$`Sold Price` > 10000),]) + geom_point(mapping=aes(x=milelong, y=milelat, color=logprice)) + scale_color_continuous(low="yellow", high="red") + facet_wrap(~cluster)+ xlim(3,19) + ylim(42,70)
+```
+```
+
