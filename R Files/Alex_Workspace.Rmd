@@ -8,9 +8,8 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(amap)
-library(gtools)
-library(useful)
+library(readxl)
+library(lubridate)
 ```
 
 
@@ -20,6 +19,8 @@ FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv
   `Directions` = col_character(),
   `Water Frontage Length` = col_integer()
 ))
+
+FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
 ```
 
 ```{r}
@@ -30,28 +31,47 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
 
-```
-
-
-```{r}
-# kmeans Clustering with three variables
-FM_Housing_Clean_Omit <- FM_Housing_Clean %>% filter(!is.na(`Geo Lon`) & !is.na(`Geo Lat`))
-FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% mutate(logprice = log(`Sold Price`, base = 1.25)) %>% mutate(milelong = (`Geo Lon`+97)/.0185) %>% mutate(milelat = (`Geo Lat` -46)/.0145) %>% mutate(scaledSqFt = 0.001*`Total SqFt.`) 
-
-#getFit <- FM_Housing_Clean_Omit %>% select(logprice, milelong, milelat) %>% FitKMeans(max.clusters=30, nstart=15)
-
-fit <- FM_Housing_Clean_Omit %>% select(logprice, milelong, milelat) %>% Kmeans(27, nstart=25, method="euclidean")
-
-#PlotHartigan(getFit)
-
-FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster)) %>% rename("cluster" = `as.factor(fit$cluster)`)
-
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold Period" = floor_date(`Sold Date`, "month"))
 ```
 
 ```{r}
-ggplot(data=FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=milelong, y=milelat, colour=cluster)) + xlim(3,19) + ylim(42,70)
+FM_Agg_Monthly <- FM_Labor_Raw %>% mutate(Period=as.Date(paste(Year, Period, "01", sep="-"), "%Y-%b-%d")) %>% select(-Year)
 
-ggplot(data=FM_Housing_Clean_Omit[which(FM_Housing_Clean_Omit$`Sold Price` <= 700000 & FM_Housing_Clean_Omit$`Sold Price` > 10000),]) + geom_point(mapping=aes(x=milelong, y=milelat, color=logprice)) + scale_color_continuous(low="yellow", high="red") + facet_wrap(~cluster)+ xlim(3,19) + ylim(42,70)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate_at(vars(-Period), parse_number)
 ```
+
+```{r}
+getHousesOnMarket <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(`Start Date` <= currentDate, currentDate <= `Pended Date`)))
+}
+
+getHousesSoldMonthly <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(currentDate - months(1) <= `Pended Date`, `Pended Date` <= currentDate)))
+}
+
+getHousesSoldYearly <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(currentDate - years(1) <= `Pended Date`, `Pended Date` <= currentDate)))
+}
+
+getMedianSoldPriceMonthly <- function(currentDate) {
+  return((FM_Housing_Clean %>% filter(currentDate - months(1) <= `Pended Date`, `Pended Date` <= currentDate)) %>% pull(`Sold Price`) %>% median())
+}
+
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses on Market" = getHousesOnMarket(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses Sold in Period" = getHousesSoldMonthly(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Sales Rate over past Year" = getHousesSoldYearly(Period)/12)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Months Remaining Inventory" = `Houses on Market` / `Houses Sold in Period`)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Seasonally-corrected MRI" = `Houses on Market` / `Sales Rate over past Year`)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Median Sold Price in Period" = getMedianSoldPriceMonthly(Period))
+```
+
+```{r}
+FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Houses on Market`), color="red") + geom_line(mapping=aes(x=Period, y=`Houses Sold in Period`), colour="blue")
+
+FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Months Remaining Inventory`))
+
+FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Seasonally-corrected MRI`))
+
+FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Median Sold Price in Period`))
 ```
 
