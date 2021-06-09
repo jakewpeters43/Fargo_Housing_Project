@@ -12,6 +12,11 @@ library(amap)
 library(gtools)
 library(useful)
 library(cluster)
+library(DEoptimR)
+library(robustbase)
+library(Gmedian)
+library(RSpectra)
+
 ```
 
 
@@ -61,18 +66,16 @@ fit
 FM_Housing_Clean_Omit <- FM_Housing_Clean_Omit %>% cbind(as.factor(fit$cluster)) %>% rename("cluster" = `as.factor(fit$cluster)`)
 
 ```
+
 ```{r}
 
 ggplot() + geom_point(data=FM_Housing_Clean_Omit, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Omit$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
 ggplot(data = FM_Housing_Clean_Omit) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`),color=FM_Housing_Clean_Omit$`cluster`)  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
 ```
-
+k-medioids: clara
 ```{r}
 
-
-
-#pam(FM_Housing_kmeans2, 21, metric = "euclidean", stand = FALSE)
-clarax <- clara(FM_Housing_kmeans2, 70, samples=50)
+clarax <- clara(FM_Housing_kmeans2, 72, samples=50)
 clarax
 ```
 ```{r}
@@ -105,6 +108,25 @@ FM_Housing_Clean_Clara <- FM_Housing_Clean_Omit %>% cbind(as.factor(clarax$clust
 
 ggplot() + geom_point(data=FM_Housing_Clean_Clara, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Clara$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
 FM_Housing_Clean_Clara %>% filter(`Sold Price` >= 10000 & `Sold Price` <= 700000) %>% ggplot() + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`,color=`Sold Price`))  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
+
+```
+
+K-medians clustering
+```{r}
+medians <- kGmedian(FM_Housing_kmeans2, 50, gamma=1, alpha=0.75, nstart = 10, nstartkmeans = 10,
+iter.max = 20)
+#clarax <- clara(FM_Housing_kmeans2, 72, samples=50)
+
+```
+K-medians plot
+```{r}
+
+FM_Housing_Clean_Median <- FM_Housing_Clean_Omit %>% cbind(as.factor(medians$cluster)) %>% rename("cluster" = `as.factor(medians$cluster)`)
+
+ggplot() + geom_point(data=FM_Housing_Clean_Median, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Median$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
+FM_Housing_Clean_Median %>% filter(`Sold Price` >= 10000 & `Sold Price` <= 700000) %>% ggplot() + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`,color=`Sold Price`))  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
+
+
 
 ```
 
