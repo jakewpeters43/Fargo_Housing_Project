@@ -77,5 +77,3 @@ mutate(Patio=ifelse(str_detect(`Features`,"Patio"), str_extract(`Features`,"Pati
 ```
 
 ```
-\\w+\\?.\\?\\s+\\?\\
-(?<=Amenities\\|)
