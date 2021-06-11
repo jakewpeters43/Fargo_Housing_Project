@@ -54,25 +54,29 @@ Note that if you want to catch comma, space, word, period, space, then you could
 
 #grep(`Air Conditioning|Central|Yes;`, features, ignore.case = TRUE)
 
-featuresfilter <- features %>% head(10)
+featuresfilter <- features %>% head(1000)
 featuresfilter
 
 ```
 ```{r}
 # if Air Conditioning matches, extract by look behind Air Conditioning for next word, otherwise write 'no' if false
 
-featuresfilter %>% mutate(AC=ifelse(str_detect(`Features`,"Air Conditioning"), str_extract(`Features`,"(?<=Air Conditioning\\|)\\w+"), "NO"))%>% mutate(Exterior_Siding=ifelse(str_detect(`Features`,"Vinyl Siding|Metal Siding|Brick|Wood Siding|Shingle/Shake|Stucco"), str_extract(`Features`,"(Metal Siding)|(Vinyl Siding)|(Brick)|(Wood Siding)|(Shingle/Shake)|(Stucco)"), "NO")) %>%
+featuresfilter %>% mutate(AC=ifelse(str_detect(`Features`,"Air Conditioning"), str_extract(`Features`,"(?<=Air Conditioning\\|)\\w+"), "NO")) %>% mutate(Exterior_Siding=ifelse(str_detect(`Features`,"Vinyl Siding|Metal Siding|Brick|Wood Siding|Shingle/Shake|Stucco|Hard Board"), str_extract(`Features`,"(Metal Siding)|(Vinyl Siding)|(Brick)|(Wood Siding)|(Shingle/Shake)|(Stucco)|(Hard Board)"), "NO")) %>%
 mutate(Foundation=ifelse(str_detect(`Features`,"Foundation"), str_extract(`Features`,"(?<=Foundation\\|)\\w+"), "NO")) %>%
 mutate(New_Construction=ifelse(str_detect(`Features`,"New Construction\\|Yes|New Construction\\|No"), str_extract(`Features`,"(?<=New Construction\\|)(Yes)|(No)"), "NO")) %>%
-mutate(Roof=ifelse(str_detect(`Features`,"Roof"), str_extract(`Features`,"(?<=Roof\\|)\\w+"), "NO")) %>%
+mutate(Roof=ifelse(str_detect(`Features`,"Roof"), str_extract(`Features`,"(?<=Roof\\|)\\w+\\s?\\w+?"), "NO")) %>%
 mutate(Water_Heater=ifelse(str_detect(`Features`,"Water Heater"), str_extract(`Features`,"(?<=Water Heater\\|)\\w+"), "NO")) %>%
 mutate(Fireplace=ifelse(str_detect(`Features`,"Fireplace"), str_extract(`Features`,"(?<=Fireplace\\|)\\w+"), "NO")) %>%
-mutate(Garage=ifelse(str_detect(`Features`,"Garage"), str_extract(`Features`,"Garage"), "NO")) %>%
-mutate(Gas_Heat_System=ifelse(str_detect(`Features`,"Heat System\\|G"), str_extract(`Features`,"GFA"), "NO")) %>%
-mutate(Electric_Heat_System=ifelse(str_detect(`Features`,"Heat System\\|E"), str_extract(`Features`,"elec hot water|elec forced air"), "NO")) %>%
+mutate(Garage_Stalls_Attached=ifelse(str_detect(`Features`,"Garage\\|# Stalls Attached\\|"), str_extract(`Features`,"(?<=Garage\\|# Stalls Attached\\|)\\d"), "NO")) %>%
+mutate(Garage_Stalls_Detached=ifelse(str_detect(`Features`,"Garage\\|# Stalls Detached\\|"), str_extract(`Features`,"(?<=Garage\\|# Stalls Detached\\|)\\d"), "NO")) %>%
+mutate(Gas_Heat_System=ifelse(str_detect(`Features`,"Heat System\\|G"), str_extract(`Features`,"gas forced air|gas hot water"), "NO")) %>%
+mutate(Electric_Heat_System=ifelse(str_detect(`Features`,"Heat System\\|E"), str_extract(`Features`,"elec hot water|elec forced air|baseboard elec"), "NO")) %>%
 mutate(Water_Type=ifelse(str_detect(`Features`,"City Water"), str_extract(`Features`,"City Water"), "NO")) %>%
 mutate(Deck=ifelse(str_detect(`Features`,"Deck"), str_extract(`Features`,"\\w+?\\.?\\s?\\w+\\s+(?=Deck)"), "NO")) %>%
-mutate(Patio=ifelse(str_detect(`Features`,"Patio"), str_extract(`Features`,"Patio"), "NO"))
+mutate(Patio=ifelse(str_detect(`Features`,"Patio"), str_extract(`Features`,"Patio"), "NO")) %>%
+mutate(Dishwasher=ifelse(str_detect(`Features`,"Dishwasher"), str_extract(`Features`,"Dishwasher"), "NO"))
+
+
 
 ```
 
