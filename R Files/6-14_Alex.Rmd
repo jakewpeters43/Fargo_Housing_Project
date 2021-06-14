@@ -25,7 +25,9 @@ FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv
 FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
 
 FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
+```
 
+```{r}
 FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
@@ -96,11 +98,9 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
 ```{r}
 FM_Agg_Monthly <- FM_Labor_Raw %>% mutate(Period=as.Date(paste(Year, Period, "01", sep="-"), "%Y-%b-%d"))
 
-FM_Income_Clean <- FM_Income_Raw %>% select(c(Date, Fargo)) %>% rename("Year"=Date) %>% rename("Median Household Income"=Fargo)
+FM_Agg_Monthly <- left_join(FM_Agg_Monthly, FM_Income_Raw)
 
-FM_Agg_Monthly <- left_join(FM_Agg_Monthly, FM_Income_Clean)
-
-FM_Agg_Monthly <- FM_Agg_Monthly %>% select (-Year) %>% mutate_at(vars(-Period, -CPI, -`Median Household Income`), parse_number)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% select(-c(Year, employment, unemployment)) %>% mutate_at(vars(`labor force`,`unemployment rate`), parse_number)
 
 getHousesOnMarket <- function(currentDate) {
   return(nrow(FM_Housing_Clean %>% filter(`Start Date` <= currentDate, currentDate <= `Pended Date`)))
@@ -136,7 +136,13 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Sold Price in Pe
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Real Median Sold Price in Period" = 261.56*`Median Sold Price in Period` / `CPI`)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Real Median Market Price in Period" = 261.56*`Median Market Price in Period` / `CPI`)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Median Sale to List Ratio in Period" = getMedianSaleToListMonthly(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Monthly Payment on Median Home Sold in Period"=`Median Sold Price in Period`*.8*(0.01*`Effective Interest Rate`/12)/(1-(1/(1+0.01*`Effective Interest Rate`/12)^360)))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Qualifying Income for Median Home Sold in Period"=`Monthly Payment on Median Home Sold in Period`*4*12)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Affordability Index"=(`Median Income`/`Qualifying Income for Median Home Sold in Period`)*100)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Period"="Period"))
 ```
+
 
 ```{r}
 housingLinear <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean)
