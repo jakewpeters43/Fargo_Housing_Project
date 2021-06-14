@@ -181,3 +181,9 @@ excretion <- function(x){
 excretion(11)
 ```
 
+```{r}
+
+FM_Housing_Clean %>% distinct(`Year Built`)
+```
+
+
