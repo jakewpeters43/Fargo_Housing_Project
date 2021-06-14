@@ -144,15 +144,40 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Median Sale to List Ratio in Period
 ```
 
 ```{r}
-housingLinear <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean)
-
+housingLinear <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean,na.action = na.exclude)
 summary(housingLinear)
 ```
 
 ```{r}
-ggplot(data = FM_Housing_Clean, mapping = aes(y=`Real Median Sold Price in Period`, x = `Year Built`)) 
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has AC"= if_else(`Air Conditioning` == "None", "No", "Yes"))
 
 
 
+```
+```{r}
+sq <- function(n) {
+  
+ result = n*n
+  return(result)
+}
+yale <- function(n){
+  result = ifelse(n<5, "Harvard", "Yale")
+  return(result)
+}
+yale(4)
+
+double <- function(y,n) {
+  
+  result = y*n
+  return(result)
+}
+double(4, 10)
+excretion <- function(x){
+  if(x<10){
+    print("excrete")
+  }
+  else{print("urinate")}
+}
+excretion(11)
 ```
 
