@@ -139,14 +139,26 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Median Sale to List Ratio in Period
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Monthly Payment on Median Home Sold in Period"=`Median Sold Price in Period`*.8*(0.01*`Effective Interest Rate`/12)/(1-(1/(1+0.01*`Effective Interest Rate`/12)^360)))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Qualifying Income for Median Home Sold in Period"=`Monthly Payment on Median Home Sold in Period`*4*12)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Affordability Index"=(`Median Income`/`Qualifying Income for Median Home Sold in Period`)*100)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Unemployment-adjusted Affordability Index"=`Affordability Index`*(1-0.01*`unemployment rate`))
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Period"="Period"))
 ```
 
+```{r}
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
+```
+
 
 ```{r}
-housingLinear <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean)
+housingLinear <- lm(log(`Sold Price`)~`Affordability Index`+`Total SqFt.`+`Months Remaining Inventory`+`Start Date`+`Year Built`+`Total Bedrooms`+`Garage Stalls`+`Median Market Price in Period`+`Median Sold Price in Period`+`City Water`+`Has Air Conditioning`+`Dishwasher Included`, data=filter(FM_Housing_Clean, `Pended Date`>=as.Date("2002-01-01")&`Total SqFt.`>0))
 
 summary(housingLinear)
 ```
+
+```{r}
+ggplot(FM_Housing_Clean) + geom_point(mapping=aes(x=`Total SqFt.`, y=`Sold Price`)) + scale_x_log10() + scale_y_log10()
+
+summary(lm(log(`Sold Price`)~log(`Total SqFt.`),data=filter(FM_Housing_Clean, `Sold Price`>0 & `Total SqFt.` > 0)))
+```
+
 
