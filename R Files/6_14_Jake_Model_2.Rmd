@@ -145,19 +145,9 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Affordability Index"=(`Median Incom
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Period"="Period"))
 ```
 
-
 ```{r}
-housingLinear <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean, na.rm=TRUE)
-
-summary(housingLinear)
-```
-```{r}
-#which(! complete.cases(housingLinear))
-FM_Housing_Clean_Omit <- na.replace(FM_Housing_Clean, 0, na.rm = TRUE)
-# }
-housingLinearOmit <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean)
-
-summary(housingLinearOmit)
+FM_Housing_Clean_Mice <- FM_Housing_Clean %>% select(`Days on Market`, `City Water`)
+mice::md.pattern(FM_Housing_Clean_Mice)
 
 ```
 
