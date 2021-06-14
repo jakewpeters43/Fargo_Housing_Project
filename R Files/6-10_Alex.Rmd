@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
 library(lubridate)
+library(httr)
+library(stringr)
 ```
 
 
@@ -23,9 +25,7 @@ FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv
 FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
 
 FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
-```
 
-```{r}
 FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
@@ -33,9 +33,64 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
 
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Period" = floor_date(`Start Date`, "month"))
+
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold Period" = floor_date(`Sold Date`, "month"))
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sale to List Ratio" = `Sold Price` / `List Price`)
+
+Features <- str_match_all(FM_Housing_Clean$Features, "([^\\|]*)\\|([^\\|]*)\\|([^;]*);")
+
+for(i in 1:length(Features)) {
+  Features[[i]] <- Features[[i]][,2:4] %>% cbind(i)
+}
+
+Features_Clean <- as.data.frame(do.call(rbind, Features)) %>% rename("Index" = i)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Index"=factor(1:nrow(FM_Housing_Clean)))
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Air Conditioning") %>% select("Index", V2)) %>% rename("Air Conditioning"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Foundation") %>% select("Index", V2)) %>% rename("Foundation"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Exterior") %>% select("Index", V2)) %>% rename("Exterior"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Refrigerator") %>% select("Index", V3)) %>% rename("Refrigerator Included"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Dishwasher") %>% select("Index", V3)) %>% rename("Dishwasher Included"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Washer") %>% select("Index", V3)) %>% rename("Washer Included"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Dryer") %>% select("Index", V3)) %>% rename("Dryer Included"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="New Construction") %>% select("Index", V3)) %>% rename("New Construction"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Roof") %>% select("Index", V2)) %>% rename("Roof"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="City Water") %>% select("Index", V3)) %>% rename("City Water"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="City Sewer") %>% select("Index", V3)) %>% rename("City Sewer"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="# Stalls Attached") %>% select("Index", V3)) %>% rename("Attached Stalls"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Water Heater") %>% select("Index", V2)) %>% rename("Water Heater"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
+  "Air Conditioning"="None",
+  "Foundation"="Other",
+  "Exterior"="Other",
+  "Refrigerator Included"="No",
+  "Dishwasher Included"="No",
+  "Washer Included"="No",
+  "Dryer Included"="No",
+  "New Construction"="No",
+  "Roof"="Other",
+  "City Water"="No",
+  "City Sewer"="No",
+  "Attached Stalls"=0,
+  "Water Heater"="Other"
+  
+))
 ```
 
 ```{r}
@@ -46,15 +101,9 @@ FM_Income_Clean <- FM_Income_Raw %>% select(c(Date, Fargo)) %>% rename("Year"=Da
 FM_Agg_Monthly <- left_join(FM_Agg_Monthly, FM_Income_Clean)
 
 FM_Agg_Monthly <- FM_Agg_Monthly %>% select (-Year) %>% mutate_at(vars(-Period, -CPI, -`Median Household Income`), parse_number)
-```
 
-```{r}
 getHousesOnMarket <- function(currentDate) {
   return(nrow(FM_Housing_Clean %>% filter(`Start Date` <= currentDate, currentDate <= `Pended Date`)))
-}
-
-function(currentDate) {
-  FM_Housing_Clean %>% 
 }
 
 getHousesSoldMonthly <- function(currentDate) {
@@ -90,35 +139,8 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Median Sale to List Ratio in Period
 ```
 
 ```{r}
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Houses on Market`), color="red") + geom_line(mapping=aes(x=Period, y=`Houses Sold in Period`), colour="blue")
+housingLinear <- lm(log(`Sold Price`, 1.1)~`Book Section`+`Start Date`+`Map Area`+`Total SqFt.`+`Year Built`+`Style`+`Total Bedrooms`+`Total Bathrooms`+`Garage Type`+`Gen Tax`+`Map Zone`+`Flood Plain`+`School District`+`Lot Size SqFt`+`Garage Stalls`+`High School`+`Days on Market`+`Air Conditioning`+`Foundation`+`Exterior`+`Refrigerator Included`+`Dishwasher Included`+`Washer Included`+`Dryer Included`+`New Construction`+`Roof`+`City Water`+`City Sewer`+`Water Heater`, data=FM_Housing_Clean)
 
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Houses on Market`), color="red") + geom_line(mapping=aes(x=Period, y=`Sales Rate over past Year`), colour="blue")
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Months Remaining Inventory`))
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Seasonally-corrected MRI`))
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Median Sold Price in Period`))
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Real Median Sold Price in Period`))
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-01-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=scale(`Seasonally-corrected MRI`, TRUE, TRUE)), color="red") + geom_line(mapping=aes(x=Period, y=scale(`Real Median Sold Price in Period`, TRUE, TRUE)), colour="blue") + geom_hline(yintercept=0)
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-01-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=scale(`Seasonally-corrected MRI`, TRUE, TRUE)), color="red") + geom_line(mapping=aes(x=Period, y=scale(`Real Median Market Price in Period`, TRUE, TRUE)), colour="blue") + geom_hline(yintercept=0)
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-01-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Real Median Market Price in Period`), color="red") + geom_line(mapping=aes(x=Period, y=`Real Median Sold Price in Period`), colour="blue")
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-01-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Real Median Sold Price in Period`-`Real Median Market Price in Period`))
-
-FM_Agg_Monthly %>% filter(Period >= as.Date("2002-05-01") & Period <= as.Date("2020-01-01")) %>% ggplot() + geom_line(mapping=aes(x=Period, y=`Median Sale to List Ratio in Period`)) + scale_y_log10()
+summary(housingLinear)
 ```
-
-```{r}
-ggplot(data=FM_Housing_Clean %>% filter(`Geo Lon` >= -96.95, `Geo Lon` <= -96.7, `Geo Lat` >= 46.75, `Geo Lat` <= 47)) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=`Map Area`), size=0.75)
-
-ggplot(data=FM_Housing_Clean %>% filter(`Geo Lon` >= -96.95, `Geo Lon` <= -96.7, `Geo Lat` >= 46.75, `Geo Lat` <= 47, `Sold Price` >= 10000)) + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=log(`Sold Price`, base=1.1)), size=0.75) + scale_color_continuous(low="yellow", high="red") + facet_wrap(~`Map Area`)
-
-```
-
-
 
