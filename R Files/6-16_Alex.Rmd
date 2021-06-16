@@ -11,11 +11,13 @@ library(readxl)
 library(lubridate)
 library(stringr)
 library(caret)
+library(rvest)
 
 FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Directions` = col_character(),
-  `Water Frontage Length` = col_integer()
+  `Water Frontage Length` = col_integer(),
+  `Postal Code` = col_factor()
 ))
 FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
 FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
@@ -25,6 +27,7 @@ FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
 FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
+FM_Housing_Clean$`Total SqFt.`[FM_Housing_Clean$`Total SqFt.` < 150] <- NA
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Period" = floor_date(`Start Date`, "month"))
 
@@ -48,7 +51,7 @@ FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Dishwasher") %>% select("Index", V3)) %>% rename("Dishwasher Included"=V3) %>% distinct(Index, .keep_all=TRUE)
 
-FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="New Construction") %>% select("Index", V3)) %>% rename("New Construction"=V3) %>% distinct(Index, .keep_all=TRUE)
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="New Construction") %>% select("Index", V3)) %>% rename("New Construction Type"=V3) %>% distinct(Index, .keep_all=TRUE)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Roof") %>% select("Index", V2)) %>% rename("Roof"=V2) %>% distinct(Index, .keep_all=TRUE)
 
@@ -64,7 +67,7 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
   "Exterior"="Other",
   "Refrigerator Included"="No",
   "Dishwasher Included"="No",
-  "New Construction"="No",
+  "New Construction Type"="No",
   "Roof"="Other",
   "City Water"="No",
   "City Sewer"="No",
@@ -121,13 +124,21 @@ FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Pe
 
 ```{r}
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
-
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("New Construction"=if_else(`New Construction Type`=="No", "No", "Yes"))
+FM_Housing_Clean <- FM_Housing_Clean %>% rowwise %>% mutate("Style Group"=switch(`Style`,
+                                                                     "1 Story" = "1 Story",
+                                                                     "1 1/2 Stor" = "1.5+ Story",
+                                                                     "2 Story" = "1.5+ Story",
+                                                                     "3 Story" = "1.5+ Story",
+                                                                     "3 Level" = "Split Level",
+                                                                     "4 Level" = "Split Level",
+                                                                     "Bi Level" = "Bi-Level",
+                                                                     NA))
 ```
 
 
 ```{r}
-n <- 10
+n <- 50
 resamples <- vector(length=n)
 for(i in 1:n) {
   trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
@@ -140,14 +151,24 @@ for(i in 1:n) {
                         `Start Date`+
                         `Total Bedrooms`+
                         `Garage Stalls`+
-                        `Has Air Conditioning`,
-                    data=filter(FM_Housing_Clean, `Total SqFt.`>0))
+                        `Has Air Conditioning`+
+                        `New Construction`+
+                        `City Water`+
+                        `Unemployment-adjusted Affordability Index`+
+                        `Style Group`,
+                    data=filter(FM_Housing_Clean, `Start Date` >= as.Date("2001-01-01")))
   testedModel <- housingLinear %>% predict(FM_Housing_Test)
   
   resamples[i] <- postResample(testedModel, FM_Housing_Test$`Sold Price`)[2]
 }
+summary(housingLinear)
 mean(resamples)
+sd(resamples)
 
+#ggplot() + geom_point(mapping=aes(x=predict(housingLinear), y=resid(housingLinear)), alpha=0.25, size=0.75)
 ```
 
+```{r}
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Census Tract" = get_tract(`Geo Lon`, `Geo Lat`))
+```
 
