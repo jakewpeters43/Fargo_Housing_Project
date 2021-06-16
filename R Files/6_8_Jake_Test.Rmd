@@ -126,6 +126,14 @@ FM_Housing_Clean_Median <- FM_Housing_Clean_Omit %>% cbind(as.factor(medians$clu
 ggplot() + geom_point(data=FM_Housing_Clean_Median, mapping=aes(x=`Geo Lon`, y=`Geo Lat`), color=FM_Housing_Clean_Median$`cluster`) + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7)
 FM_Housing_Clean_Median %>% filter(`Sold Price` >= 10000 & `Sold Price` <= 700000) %>% ggplot() + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`,color=`Sold Price`))  + scale_color_gradient(low="yellow",high="red") + ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
 
+FM_Housing_Clean_Median %>% filter(`Sold Price` >= 10000 & `Sold Price` <= 700000) %>% ggplot() + geom_point(mapping=aes(x=`Geo Lon`, y=`Geo Lat`,color=`Map Area`))  +  ylim(46.75, 46.95) + xlim(-96.95, -96.7) + facet_wrap(~cluster)
+ggplot(data=FM_Housing_Clean_Median %>% filter(`Geo Lon` >= -96.95, `Geo Lon` <= -96.7, `Geo Lat` >= 46.75, `Geo Lat` <= 46.95)) + geom_point( mapping=aes(x=`Geo Lon`, y=`Geo Lat`, color=`Map Area`))
+
+```
+```{r}
+
+ggplot(data = FM_Housing_Clean_Median) + geom_bar(mapping = aes(`Map Area`))
+
 
 
 ```
