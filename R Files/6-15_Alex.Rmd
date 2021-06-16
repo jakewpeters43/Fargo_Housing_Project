@@ -5,25 +5,19 @@ date: "6/4/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
 library(tidyverse)
 library(readxl)
 library(lubridate)
 library(stringr)
 library(caret)
-```
 
-
-```{r}
 FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Directions` = col_character(),
   `Water Frontage Length` = col_integer()
 ))
-
 FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
-
 FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
 ```
 
@@ -31,15 +25,8 @@ FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
 FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Price Change":=`List Price`-`Original List Price`)
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/List Price Difference":=`Sold Price` - `List Price`)
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Difference":=`Sold Price` - `Original List Price`)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Period" = floor_date(`Start Date`, "month"))
-
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold Period" = floor_date(`Sold Date`, "month"))
-
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sale to List Ratio" = `Sold Price` / `List Price`)
 
 Features <- str_match_all(FM_Housing_Clean$Features, "([^\\|]*)\\|([^\\|]*)\\|([^;]*);")
 
@@ -61,10 +48,6 @@ FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Dishwasher") %>% select("Index", V3)) %>% rename("Dishwasher Included"=V3) %>% distinct(Index, .keep_all=TRUE)
 
-FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Washer") %>% select("Index", V3)) %>% rename("Washer Included"=V3) %>% distinct(Index, .keep_all=TRUE)
-
-FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Dryer") %>% select("Index", V3)) %>% rename("Dryer Included"=V3) %>% distinct(Index, .keep_all=TRUE)
-
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="New Construction") %>% select("Index", V3)) %>% rename("New Construction"=V3) %>% distinct(Index, .keep_all=TRUE)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Roof") %>% select("Index", V2)) %>% rename("Roof"=V2) %>% distinct(Index, .keep_all=TRUE)
@@ -72,8 +55,6 @@ FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="City Water") %>% select("Index", V3)) %>% rename("City Water"=V3) %>% distinct(Index, .keep_all=TRUE)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="City Sewer") %>% select("Index", V3)) %>% rename("City Sewer"=V3) %>% distinct(Index, .keep_all=TRUE)
-
-FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="# Stalls Attached") %>% select("Index", V3)) %>% replace_na(list(V3=0)) %>% rename("Attached Stalls"=V3) %>% distinct(Index, .keep_all=TRUE) 
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Water Heater") %>% select("Index", V2)) %>% rename("Water Heater"=V2) %>% distinct(Index, .keep_all=TRUE) 
 
@@ -83,13 +64,10 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
   "Exterior"="Other",
   "Refrigerator Included"="No",
   "Dishwasher Included"="No",
-  "Washer Included"="No",
-  "Dryer Included"="No",
   "New Construction"="No",
   "Roof"="Other",
   "City Water"="No",
   "City Sewer"="No",
-  "Attached Stalls"=0,
   "Water Heater"="Other"
 ))
 ```
@@ -133,9 +111,6 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Months Remaining Inventory" = `Hous
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Seasonally-corrected MRI" = `Houses on Market` / `Sales Rate over past Year`)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Market Price in Period" = getMedianMarketPriceMonthly(Period))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Sold Price in Period" = getMedianSoldPriceMonthly(Period))
-FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Real Median Sold Price in Period" = 261.56*`Median Sold Price in Period` / `CPI`)
-FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Real Median Market Price in Period" = 261.56*`Median Market Price in Period` / `CPI`)
-FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Median Sale to List Ratio in Period" = getMedianSaleToListMonthly(Period))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Monthly Payment on Median Home Sold in Period"=`Median Sold Price in Period`*.8*(0.01*`Effective Interest Rate`/12)/(1-(1/(1+0.01*`Effective Interest Rate`/12)^360)))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Qualifying Income for Median Home Sold in Period"=`Monthly Payment on Median Home Sold in Period`*4*12)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Affordability Index"=(`Median Income`/`Qualifying Income for Median Home Sold in Period`)*100)
@@ -150,30 +125,27 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`
 
 
 ```{r}
-housingLinear <- lm(log(`Sold Price`)~`Affordability Index`+`Total SqFt.`+`Months Remaining Inventory`+`Start Date`+`Year Built`+`Total Bedrooms`+`Garage Stalls`+`Median Market Price in Period`+`Median Sold Price in Period`+`City Water`+`Has Air Conditioning`+`Dishwasher Included`+`Style`, data=filter(FM_Housing_Clean, `Pended Date`>=as.Date("2002-01-01")&`Total SqFt.`>0))
+n <- 10
+resamples <- vector(length=n)
+for(i in 1:n) {
+  trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
+  FM_Housing_Train <- FM_Housing_Clean[trainIndex,]
+  FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
 
-summary(housingLinear)
+  housingLinear <- lm(log(`Sold Price`)~
+                        `Total SqFt.`+
+                        `Year Built`+
+                        `Start Date`+
+                        `Total Bedrooms`+
+                        `Garage Stalls`+
+                        `Has Air Conditioning`,
+                    data=filter(FM_Housing_Clean, `Total SqFt.`>0))
+  testedModel <- housingLinear %>% predict(FM_Housing_Test)
+  
+  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Sold Price`)[2]
+}
+mean(resamples)
 
-ggplot() + geom_point(mapping=aes(x=predict(housingLinear), y=resid(housingLinear)), alpha=0.25, size=0.75)
 ```
-
-```{r}
-linear2fold <- train(log(`Sold Price`)~
-                       `Affordability Index`+
-                       `Total SqFt.`+
-                       `Months Remaining Inventory`+
-                       `Start Date`+`Year Built`+
-                       `Total Bedrooms`+
-                       `Garage Stalls`+
-                       `Median Market Price in Period`+
-                       `Median Sold Price in Period`+
-                       `City Water`+
-                       `Has Air Conditioning`+
-                       `Dishwasher Included`+
-                       `Style`,
-              data=filter(FM_Housing_Clean, `Pended Date`>=as.Date("2002-01-01")&`Total SqFt.`>0),
-              method="lm",
-              trControl = trainControl(method="cv", number=2))
-
 
 
