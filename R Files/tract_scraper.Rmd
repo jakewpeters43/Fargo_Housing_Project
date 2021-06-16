@@ -34,16 +34,12 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Sold/Original List Price Differ
 
 
 ```{r}
-get_tract <-  function(x,y) {
- return(tract)
-}
 
   latlonframe <- FM_Housing_Clean %>% select(`Geo Lon`, `Geo Lat`)
-  latlonhead <- latlonframe %>% head(100)
+  latlonhead <- latlonframe %>% head(10)
   tractvec <- vector(length = nrow(latlonhead))
  for(i in 1:nrow(latlonhead)) {
-    row <- latlonhead[i,]
-    # do stuff with row
+    
   lon <- toString(latlonhead[i,1])
   lat <- toString(latlonhead[i,2])
   latlon <- read_html(paste0("https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=",lon,"&y=",lat,"&benchmark=4&vintage=4"))
