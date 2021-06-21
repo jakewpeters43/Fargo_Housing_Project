@@ -1,0 +1,238 @@
+---
+title: "FM_Housing Workspace - Jake"
+author: "Alex Voigt & Jake Peters"
+date: "6/21/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(stringr)
+library(caret)
+library(rvest)
+
+FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer(),
+  `Postal Code` = col_factor()
+))
+FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
+FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
+FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
+FM_Housing_Clean$`Total SqFt.`[FM_Housing_Clean$`Total SqFt.` < 150] <- NA
+
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Period" = floor_date(`Start Date`, "month"))
+
+Features <- str_match_all(FM_Housing_Clean$Features, "([^\\|]*)\\|([^\\|]*)\\|([^;]*);")
+
+for(i in 1:length(Features)) {
+  Features[[i]] <- Features[[i]][,2:4] %>% cbind(i)
+}
+
+Features_Clean <- as.data.frame(do.call(rbind, Features)) %>% rename("Index" = i)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Index"=factor(1:nrow(FM_Housing_Clean)))
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Air Conditioning") %>% select("Index", V2)) %>% rename("Air Conditioning"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Foundation") %>% select("Index", V2)) %>% rename("Foundation"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Exterior") %>% select("Index", V2)) %>% rename("Exterior"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="New Construction") %>% select("Index", V3)) %>% rename("New Construction Type"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Roof") %>% select("Index", V2)) %>% rename("Roof"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V1=="Water Heater") %>% select("Index", V2)) %>% rename("Water Heater"=V2) %>% distinct(Index, .keep_all=TRUE) 
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Kitchen Island") %>% select("Index", V3)) %>% rename("Kitchen Island"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Patio") %>% select("Index", V3)) %>% rename("Patio"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Wood Deck"|V2=="Maint. Free Deck") %>% select("Index", V2)) %>% rename("Deck"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Fenced Partial"|V2=="Fenced Full") %>% select("Index", V2)) %>% rename("Fence"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Pool") %>% select("Index", V3)) %>% rename("Pool"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Sprinkler System") %>% select("Index", V3)) %>% rename("Sprinkler System"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Gazebo") %>% select("Index", V3)) %>% rename("Gazebo"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Dock") %>% select("Index", V3)) %>% rename("Dock"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Pantry") %>% select("Index", V3)) %>% rename("Pantry"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Walk-in Closet") %>% select("Index", V3)) %>% rename("Walk-in Closet"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Private Bath") %>% select("Index", V3)) %>% rename("Private Bath"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
+  "Air Conditioning"="None",
+  "Foundation"="Other",
+  "Exterior"="Other",
+  "New Construction Type"="No",
+  "Roof"="Other",
+  "Water Heater"="Other",
+  "Kitchen Island"="No",
+  "Patio"="No",
+  "Deck"="None",
+  "Fence"="None",
+  "Pool"="No",
+  "Sprinkler System"="No",
+  "Gazebo"="No",
+  "Dock"="No",
+  "Pantry"="No",
+  "Walk-in Closet"="No",
+  "Private Bath"="No"
+))
+
+FM_Housing_Clean <- droplevels(FM_Housing_Clean)
+```
+
+
+```{r}
+FM_Agg_Monthly <- FM_Labor_Raw %>% mutate(Period=as.Date(paste(Year, Period, "01", sep="-"), "%Y-%b-%d"))
+
+FM_Agg_Monthly <- left_join(FM_Agg_Monthly, FM_Income_Raw)
+
+FM_Agg_Monthly <- FM_Agg_Monthly %>% select(-c(Year, employment, unemployment)) %>% mutate_at(vars(`labor force`,`unemployment rate`), parse_number)
+
+getHousesOnMarket <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(`Start Date` <= currentDate, currentDate <= `Pended Date`)))
+}
+
+getHousesSoldMonthly <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(currentDate - months(1) <= `Pended Date`, `Pended Date` <= currentDate)))
+}
+
+getHousesSoldYearly <- function(currentDate) {
+  return(nrow(FM_Housing_Clean %>% filter(currentDate - years(1) <= `Pended Date`, `Pended Date` <= currentDate)))
+}
+
+getMedianMarketPriceMonthly <- function(currentDate) {
+  return(FM_Housing_Clean %>% filter(`Start Date` <= currentDate, currentDate - months(1) <= `Pended Date`) %>% pull(`List Price`) %>% median())
+}
+
+getMedianSoldPriceMonthly <- function(currentDate) {
+  return(FM_Housing_Clean %>% filter(currentDate - months(1) <= `Pended Date`, `Pended Date` <= currentDate) %>% pull(`Sold Price`) %>% median())
+}
+
+getMedianSaleToListMonthly <- function(currentDate) {
+  return(FM_Housing_Clean %>% filter(currentDate - months(1) <= `Pended Date`, `Pended Date` <= currentDate) %>% pull(`Sale to List Ratio`) %>% mean())
+}
+
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses on Market" = getHousesOnMarket(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses Sold in Period" = getHousesSoldMonthly(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Sales Rate over past Year" = getHousesSoldYearly(Period)/12)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Months Remaining Inventory" = `Houses on Market` / `Houses Sold in Period`)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Seasonally-corrected MRI" = `Houses on Market` / `Sales Rate over past Year`)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Market Price in Period" = getMedianMarketPriceMonthly(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Sold Price in Period" = getMedianSoldPriceMonthly(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Monthly Payment on Median Home Sold in Period"=`Median Sold Price in Period`*.8*(0.01*`Effective Interest Rate`/12)/(1-(1/(1+0.01*`Effective Interest Rate`/12)^360)))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Qualifying Income for Median Home Sold in Period"=`Monthly Payment on Median Home Sold in Period`*4*12)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Affordability Index"=(`Median Income`/`Qualifying Income for Median Home Sold in Period`)*100)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Unemployment-adjusted Affordability Index"=`Affordability Index`*(1-0.01*`unemployment rate`))
+
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Period"="Period"))
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("New Construction"=if_else(`New Construction Type`=="No", "No", "Yes"))
+FM_Housing_Clean <- FM_Housing_Clean %>% rowwise %>% mutate("Style Group"=switch(`Style`,
+                                                                "1 Story" = "1 Story",
+                                                                "1 1/2 Stor" = "1.5 Story",
+                                                                "2 Story" = "2+ Story",
+                                                                "3 Story" = "2+ Story",
+                                                                "3 Level" = "Split Level",
+                                                                "4 Level" = "Split Level",
+                                                                "Bi Level" = "Bi-Level",
+                                                                NA))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Roof Group"=if_else(`Roof` %in% c("Shingle", "Architectural Shingle"), as.character(`Roof`), "Other"))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Book Section Group"=switch(`Book Section`,
+                                                                "Condominium" = "Group Residence",
+                                                                "Duplex" = "Group Residence",
+                                                                "Lake Property" = "Single Family Residence",
+                                                                "Single Family Residence" = "Single Family Residence",
+                                                                "Townhouse" = "Townhouse/Twinhome",
+                                                                "Twinhomes" = "Townhouse/Twinhome",
+                                                                NA))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Water Heater Group"=if_else(`Water Heater`=="Gas", "Gas", "Electric/Other"))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Fence"=if_else(`Fence`=="None", "No", "Yes"))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None", "No", "Yes"))
+```
+
+
+```{r}
+ggplot(data=FM_Housing_Clean) + geom_bar(mapping=aes(x=`Private Bath`))
+```
+
+```{r}
+n <- 100
+resamples <- vector(length=n)
+for(i in 1:n) {
+  trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
+  FM_Housing_Train <- FM_Housing_Clean[trainIndex,]
+  FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
+
+  housingLinear <- lm(log(`Sold Price`)~
+                        `Total SqFt.`+
+                        `Year Built`+
+                        `Start Date`+
+                        `Total Bedrooms`+
+                        `Garage Stalls`+
+                        `Has Air Conditioning`+
+                        `New Construction`+
+                        `Unemployment-adjusted Affordability Index`+
+                        `Style Group`+
+                        `Book Section Group`+
+                        `Roof Group`+
+                        `Water Heater Group`+
+                        `Kitchen Island`+
+                        `Patio`+
+                        `Has Deck`+
+                        `Has Fence`+
+                        `Sprinkler System`+
+                        `Gazebo`+
+                        `Dock`+
+                        `Pantry`+
+                        `Walk-in Closet`+
+                        `Private Bath`,
+                    data=FM_Housing_Train[which(FM_Housing_Train$`Start Date` >= as.Date("2001-01-01")),])
+  testedModel <- housingLinear %>% predict(FM_Housing_Test)
+  
+  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Sold Price`)[2]
+}
+summary(housingLinear)
+mean(resamples)
+sd(resamples)
+
+#ggplot() + geom_point(mapping=aes(x=predict(housingLinear), y=resid(housingLinear)), alpha=0.25, size=0.75)
+```
+
+```{r}
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+```
+
