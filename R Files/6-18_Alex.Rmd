@@ -12,6 +12,7 @@ library(lubridate)
 library(stringr)
 library(caret)
 library(rvest)
+library(lme4)
 
 FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
@@ -130,13 +131,13 @@ getMedianSaleToListMonthly <- function(currentDate) {
   return(FM_Housing_Clean %>% filter(currentDate - months(1) <= `Pended Date`, `Pended Date` <= currentDate) %>% pull(`Sale to List Ratio`) %>% mean())
 }
 
-FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses on Market" = getHousesOnMarket(Period))
-FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses Sold in Period" = getHousesSoldMonthly(Period))
-FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Sales Rate over past Year" = getHousesSoldYearly(Period)/12)
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses on Market" = if_else(`Period` >= as.Date("2001-01-01"), getHousesOnMarket(Period), as.integer(500)))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Houses Sold in Period" = if_else(`Period` >= as.Date("2001-01-01"), getHousesSoldMonthly(Period), as.integer(200)))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Sales Rate over past Year" = if_else(`Period` >= as.Date("2002-01-01"), getHousesSoldYearly(Period)/12, 200))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Months Remaining Inventory" = `Houses on Market` / `Houses Sold in Period`)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Seasonally-corrected MRI" = `Houses on Market` / `Sales Rate over past Year`)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Market Price in Period" = getMedianMarketPriceMonthly(Period))
-FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Sold Price in Period" = getMedianSoldPriceMonthly(Period))
+FM_Agg_Monthly <- FM_Agg_Monthly %>% rowwise %>% mutate("Median Sold Price in Period" = if_else(`Period` >= as.Date("2001-01-01"), getMedianSoldPriceMonthly(Period), 100000))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Monthly Payment on Median Home Sold in Period"=`Median Sold Price in Period`*.8*(0.01*`Effective Interest Rate`/12)/(1-(1/(1+0.01*`Effective Interest Rate`/12)^360)))
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Qualifying Income for Median Home Sold in Period"=`Monthly Payment on Median Home Sold in Period`*4*12)
 FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Affordability Index"=(`Median Income`/`Qualifying Income for Median Home Sold in Period`)*100)
@@ -171,20 +172,8 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Fence"=if_else(`Fence`=="No
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None", "No", "Yes"))
 ```
 
-
 ```{r}
-ggplot(data=FM_Housing_Clean) + geom_bar(mapping=aes(x=`Private Bath`))
-```
-
-```{r}
-n <- 100
-resamples <- vector(length=n)
-for(i in 1:n) {
-  trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
-  FM_Housing_Train <- FM_Housing_Clean[trainIndex,]
-  FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
-
-  housingLinear <- lm(log(`Sold Price`)~
+hlm1 <- lmer(log(`Sold Price`)~
                         `Total SqFt.`+
                         `Year Built`+
                         `Start Date`+
@@ -206,16 +195,54 @@ for(i in 1:n) {
                         `Dock`+
                         `Pantry`+
                         `Walk-in Closet`+
-                        `Private Bath`,
-                    data=FM_Housing_Train[which(FM_Housing_Train$`Start Date` >= as.Date("2001-01-01")),])
-  testedModel <- housingLinear %>% predict(FM_Housing_Test)
+                        `Private Bath`+
+                        `Seasonally-corrected MRI`+
+                    (1|`Postal Code`),
+                    data=FM_Housing_Clean, REML=FALSE)
+summary(hlm1)
+```
+
+```{r}
+n <- 50
+resamples <- vector(length=n)
+for(i in 1:n) {
+  trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
+  FM_Housing_Train <- FM_Housing_Clean[trainIndex,]
+  FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
+
+  housingLinear <- lmer(log(`Sold Price`)~
+                        `Total SqFt.`+
+                        `Year Built`+
+                        `Start Date`+
+                        `Total Bedrooms`+
+                        `Garage Stalls`+
+                        `Has Air Conditioning`+
+                        `New Construction`+
+                        `Unemployment-adjusted Affordability Index`+
+                        `Style Group`+
+                        `Book Section Group`+
+                        `Roof Group`+
+                        `Water Heater Group`+
+                        `Kitchen Island`+
+                        `Patio`+
+                        `Has Deck`+
+                        `Has Fence`+
+                        `Sprinkler System`+
+                        `Gazebo`+
+                        `Dock`+
+                        `Pantry`+
+                        `Walk-in Closet`+
+                        `Private Bath`+
+                        `Seasonally-corrected MRI`+
+                    (1|`Postal Code`),
+                    data=FM_Housing_Clean, REML=FALSE)
+  testedModel <- housingLinear %>% predict(FM_Housing_Test, allow.new.levels=TRUE)
   
   resamples[i] <- postResample(testedModel, FM_Housing_Test$`Sold Price`)[2]
 }
 summary(housingLinear)
 mean(resamples)
 sd(resamples)
-
-#ggplot() + geom_point(mapping=aes(x=predict(housingLinear), y=resid(housingLinear)), alpha=0.25, size=0.75)
 ```
+
 
