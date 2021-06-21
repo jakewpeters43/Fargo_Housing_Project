@@ -180,7 +180,7 @@ for(i in 1:n) {
   trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
   FM_Housing_Train <- FM_Housing_Clean[trainIndex,]
   FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
-  housingLinear <- lmer(log(`Sold Price`)~
+  housingLinear <- lmer(`Sold Price`~
                         `Total SqFt.`+
                         `Year Built`+
                         `Start Date`+
@@ -207,7 +207,7 @@ for(i in 1:n) {
                     (1|`Postal Code`),
                     data=FM_Housing_Train, REML=FALSE)
 
-  testedModel <- housingLinear %>% lme4:::predict.merMod(FM_Housing_Test,  allow.new.levels=TRUE)
+  testedModel <- housingLinear %>% lme4:::predict.merMod(FM_Housing_Test, allow.new.levels=TRUE)
   
   resamples[i] <- postResample(testedModel, FM_Housing_Test$`Sold Price`)[2]
 }
