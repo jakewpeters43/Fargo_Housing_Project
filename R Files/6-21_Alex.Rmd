@@ -96,7 +96,7 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
   "Dock"="No",
   "Pantry"="No",
   "Walk-in Closet"="No",
-  "Private Bath"="No"
+  "Private Bath"="No",
 ))
 
 FM_Housing_Clean <- droplevels(FM_Housing_Clean)
@@ -173,12 +173,13 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Book Section Group"=switch(`Boo
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Water Heater Group"=if_else(`Water Heater`=="Gas", "Gas", "Electric/Other"))
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Fence"=if_else(`Fence`=="None", "No", "Yes"))
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None", "No", "Yes"))
+
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Real Sold Price"=`Sold Price`*261.560/`CPI`)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log Price"=log(`Real Sold Price`))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log SqFt"=log(`Total SqFt.`))
 ```
 
-
 ```{r}
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log Price" = log(`Sold Price`))
-
 n <- 20
 resamples <- vector(length=n)
 for(i in 1:n) {
@@ -188,16 +189,16 @@ for(i in 1:n) {
   #scaling <- preProcess(FM_Housing_Train, method=c("center","scale"))
   #trainScaled <- scaling %>% predict(FM_Housing_Train)
   housingLinear <- lmer(`Log Price`~
-                        `Total SqFt.`+
+                        `Log SqFt`+
                         `Year Built`+
-                        `Start Date`+
+                        #`Start Date`+
                         `Total Bedrooms`+
                         `Garage Stalls`+
                         `Has Air Conditioning`+
                         `New Construction`+
                         `Unemployment-adjusted Affordability Index`+
+                        `Seasonally-corrected MRI`+
                         `Style Group`+
-                        `Book Section Group`+
                         `Roof Group`+
                         `Water Heater Group`+
                         `Kitchen Island`+
@@ -205,13 +206,15 @@ for(i in 1:n) {
                         `Has Deck`+
                         `Has Fence`+
                         `Sprinkler System`+
-                        `Gazebo`+
-                        `Dock`+
+                        #`Gazebo`+
+                        #`Dock`+
+                        #`Pool`+
                         `Pantry`+
                         `Walk-in Closet`+
                         `Private Bath`+
-                        `Seasonally-corrected MRI`+
-                        (1|`Postal Code`),
+                        #(1|`Book Section Group`/`Census Tract`),
+                        #(1|`Census Tract`/`Book Section Group`),
+                        (1|`Census Tract`) + (1|`Book Section`), 
                       data=FM_Housing_Train, REML=FALSE)
   #testScaled <- scaling %>% predict(FM_Housing_Test)
   testedModel <- predict(housingLinear, newdata=FM_Housing_Test, allow.new.levels=TRUE)
@@ -222,5 +225,3 @@ summary(housingLinear)
 mean(resamples)
 sd(resamples)
 ```
-
-
