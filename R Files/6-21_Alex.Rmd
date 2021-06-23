@@ -22,10 +22,13 @@ FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv
 ))
 FM_Labor_Raw <- read_excel("../Data/FM_Labor_Raw.xlsx")
 FM_Income_Raw <- read_excel("../Data/FM_Income_Raw.xlsx")
+FM_Tract_Raw <- read_excel("../Data/tract_total.xlsx")
 ```
 
 ```{r}
-FM_Housing_Clean <- FM_Housing_Raw %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
+FM_Housing_Clean <- FM_Housing_Raw[!is.na(FM_Housing_Raw$`Geo Lon`) & !is.na(FM_Housing_Raw$`Geo Lat`),]
+FM_Housing_Clean <- FM_Housing_Clean %>% cbind(FM_Tract_Raw$tractvec) %>% rename("Census Tract"=`FM_Tract_Raw$tractvec`)
+FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
 FM_Housing_Clean$`Total SqFt.`[FM_Housing_Clean$`Total SqFt.` < 150] <- NA
@@ -174,13 +177,17 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None
 
 
 ```{r}
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log Price" = log(`Sold Price`))
+
 n <- 20
 resamples <- vector(length=n)
 for(i in 1:n) {
   trainIndex <- createDataPartition(FM_Housing_Clean$`Sold Price`, p=0.8, list=FALSE)
   FM_Housing_Train <- FM_Housing_Clean[trainIndex,]
   FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
-  housingLinear <- lmer(log(`Sold Price`)~
+  #scaling <- preProcess(FM_Housing_Train, method=c("center","scale"))
+  #trainScaled <- scaling %>% predict(FM_Housing_Train)
+  housingLinear <- lmer(`Log Price`~
                         `Total SqFt.`+
                         `Year Built`+
                         `Start Date`+
@@ -204,11 +211,12 @@ for(i in 1:n) {
                         `Walk-in Closet`+
                         `Private Bath`+
                         `Seasonally-corrected MRI`+
-                    (1|`Postal Code`),
-                    data=FM_Housing_Train, REML=FALSE)
-  testedModel <- housingLinear %>% predict(FM_Housing_Test, allow.new.levels=TRUE)
+                        (1|`Postal Code`),
+                      data=FM_Housing_Train, REML=FALSE)
+  #testScaled <- scaling %>% predict(FM_Housing_Test)
+  testedModel <- predict(housingLinear, newdata=FM_Housing_Test, allow.new.levels=TRUE)
   
-  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Sold Price`)[2]
+  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Log Price`)[2]
 }
 summary(housingLinear)
 mean(resamples)
