@@ -11,23 +11,32 @@ library(shiny)
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
-
+    
+    
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
+    titlePanel("Book Section"),
 
     # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
-            sliderInput("bis",
-                        "Number of bis:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
+            # Select type of trend to plot
+            selectInput(inputId = "type", label = strong("Choose Book Section"),
+                        choices = unique(FM_Housing_Clean$`Book Section`),
+                        selected = "Single Family Residence")
         ),
+       # sidebarPanel(
+            checkboxGroupInput(inputId = "bedrooms", label = strong("Choose # Bedrooms"),
+                               choices = unique(FM_Housing_Clean$`Total Bedrooms`),
+                               selected = "3"
+                               )
+        ),
+        
 
         # Show a plot of the generated distribution
         mainPanel(
-            plotOutput("distPlot")
+            plotOutput("geom_bar"),
+            textOutput("result"),
+            plotOutput("geom_point")
         )
     )
-))
+)#)
