@@ -9,18 +9,39 @@
 
 library(shiny)
 
-# Define server logic required to draw a histogram
+# Define server logic required to plot townhouses
 shinyServer(function(input, output) {
 
-    output$distPlot <- renderPlot({
+    output$result <- renderText({
+        paste("You chose", input$type)
+    })
+    chosendata <- reactive({
+        req(input$type)
+        
+        df <- FM_Housing_Clean %>% filter(`Book Section` %in% input$type)
+        
+    })
+    pointdata <- reactive({
+        req(input$bedrooms)
+        df <- FM_Housing_Clean %>% filter(`Total Bedrooms` %in% input$bedrooms) %>% 
+           group_by(median(`Sold Price`),`City`) %>% summarize(median_Sold_Price =median(`Sold Price`))
+        
+    })
+    
+    output$geom_bar <- renderPlot({
 
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bis <- seq(min(x), max(x), length.out = input$bis + 1)
+        # generate book section type from input$section from ui.R
+       # type    <- FM_Housing_Clean[`Book Section`]
+       # section <- seq(min(bins), max(bins), length.out = input$section + 1)
 
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bis, col = 'darkgray', border = 'white')
+        # draw the bar with the specified number of bins
+        ggplot(chosendata()) + geom_bar(mapping = aes(x=`Book Section`))
 
+    })
+    
+    output$geom_point <- renderPlot({
+        
+        ggplot(pointdata()) + geom_point(mapping = aes(y = median_Sold_Price, x= `City`))
     })
 
 })
