@@ -7,6 +7,9 @@
 #    http://shiny.rstudio.com/
 #
 
+
+# rsconnect::deployApp('C:\\Users\\13204\\Documents\\GitHub\\FM-Housing\\R Files\\HousingPlotShiny')
+library(rsconnect)
 library(shiny)
 
 # Define UI for application that draws a histogram
