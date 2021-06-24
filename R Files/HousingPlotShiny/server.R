@@ -9,7 +9,7 @@
 
 library(shiny)
 
-# Define server logic required to plot townhouses
+# Define server logic required to plot house types
 shinyServer(function(input, output) {
 
     output$result <- renderText({
@@ -43,5 +43,6 @@ shinyServer(function(input, output) {
         
         ggplot(pointdata()) + geom_point(mapping = aes(y = median_Sold_Price, x= `City`))
     })
+    
 
 })
