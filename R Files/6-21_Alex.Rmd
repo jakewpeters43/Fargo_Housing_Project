@@ -11,9 +11,10 @@ library(readxl)
 library(lubridate)
 library(stringr)
 library(caret)
-library(rvest)
 library(lme4)
+```
 
+```{r}
 FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Directions` = col_character(),
@@ -27,13 +28,15 @@ FM_Tract_Raw <- read_excel("../Data/tract_total.xlsx")
 
 ```{r}
 FM_Housing_Clean <- FM_Housing_Raw[!is.na(FM_Housing_Raw$`Geo Lon`) & !is.na(FM_Housing_Raw$`Geo Lat`),]
-FM_Housing_Clean <- FM_Housing_Clean %>% cbind(FM_Tract_Raw$tractvec) %>% rename("Census Tract"=`FM_Tract_Raw$tractvec`)
+FM_Housing_Clean <- FM_Housing_Clean %>% cbind("Census Tract"=as.factor(FM_Tract_Raw$tractvec))
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
 FM_Housing_Clean$`Total SqFt.`[FM_Housing_Clean$`Total SqFt.` < 150] <- NA
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("List Period" = floor_date(`Start Date`, "month"))
+
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Building Age" = as.integer(format(`Start Date`, "%Y")) - `Year Built`)
 
 Features <- str_match_all(FM_Housing_Clean$Features, "([^\\|]*)\\|([^\\|]*)\\|([^;]*);")
 
@@ -67,6 +70,8 @@ FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Pool") %>% select("Index", V3)) %>% rename("Pool"=V3) %>% distinct(Index, .keep_all=TRUE)
 
+FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Spa/Hot Tub") %>% select("Index", V3)) %>% rename("Spa/Hot Tub"=V3) %>% distinct(Index, .keep_all=TRUE)
+
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Sprinkler System") %>% select("Index", V3)) %>% rename("Sprinkler System"=V3) %>% distinct(Index, .keep_all=TRUE)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(Features_Clean %>% filter(V2=="Gazebo") %>% select("Index", V3)) %>% rename("Gazebo"=V3) %>% distinct(Index, .keep_all=TRUE)
@@ -97,11 +102,11 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
   "Pantry"="No",
   "Walk-in Closet"="No",
   "Private Bath"="No",
+  "Spa/Hot Tub"="No"
 ))
 
 FM_Housing_Clean <- droplevels(FM_Housing_Clean)
 ```
-
 
 ```{r}
 FM_Agg_Monthly <- FM_Labor_Raw %>% mutate(Period=as.Date(paste(Year, Period, "01", sep="-"), "%Y-%b-%d"))
@@ -180,6 +185,10 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log SqFt"=log(`Total SqFt.`))
 ```
 
 ```{r}
+
+```
+
+```{r}
 n <- 20
 resamples <- vector(length=n)
 for(i in 1:n) {
@@ -188,9 +197,11 @@ for(i in 1:n) {
   FM_Housing_Test <- FM_Housing_Clean[-trainIndex,]
   #scaling <- preProcess(FM_Housing_Train, method=c("center","scale"))
   #trainScaled <- scaling %>% predict(FM_Housing_Train)
+  #testScaled <- scaling %>% predict(FM_Housing_Test)
   housingLinear <- lmer(`Log Price`~
                         `Log SqFt`+
                         `Year Built`+
+                        #`Building Age`+
                         #`Start Date`+
                         `Total Bedrooms`+
                         `Garage Stalls`+
@@ -212,16 +223,14 @@ for(i in 1:n) {
                         `Pantry`+
                         `Walk-in Closet`+
                         `Private Bath`+
-                        #(1|`Book Section Group`/`Census Tract`),
-                        #(1|`Census Tract`/`Book Section Group`),
-                        (1|`Census Tract`) + (1|`Book Section`), 
-                      data=FM_Housing_Train, REML=FALSE)
-  #testScaled <- scaling %>% predict(FM_Housing_Test)
+                        #`Spa/Hot Tub`+
+                        (1+`Log SqFt`|`Census Tract`) + (1+`Log SqFt`|`Book Section`), 
+                      data=FM_Housing_Train, REML=FALSE, control=lmerControl(optimizer="nloptwrap", calc.derivs=FALSE))
   testedModel <- predict(housingLinear, newdata=FM_Housing_Test, allow.new.levels=TRUE)
   
   resamples[i] <- postResample(testedModel, FM_Housing_Test$`Log Price`)[2]
 }
 summary(housingLinear)
-mean(resamples)
+paste(mean(resamples)-2*sd(resamples), mean(resamples), mean(resamples)+2*sd(resamples))
 sd(resamples)
 ```
