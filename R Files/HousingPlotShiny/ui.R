@@ -11,12 +11,28 @@
 # rsconnect::deployApp('C:\\Users\\13204\\Documents\\GitHub\\FM-Housing\\R Files\\HousingPlotShiny')
 library(rsconnect)
 library(shiny)
+library(plotly)
+library(shinyjs)
 #FM_Housing_Clean <- na.omit(FM_Housing_Clean[`Year Built`]
 
 # Define UI for application that draws a histogram
-shinyUI(fluidPage(
+shinyUI(
+    navbarPage(inverse = TRUE, "FM_Housing",
+                         
+        
     
     
+    fluidPage(
+        useShinyjs(),
+        tabPanel("tab", 
+                 div( id="Sidebar", sidebarPanel(
+                     
+                 )),
+                 mainPanel(actionButton("toggleSidebar", "Toggle sidebar")
+                 )
+        ),
+        # First Page - Intro        
+        tabPanel("Intro", 
     # Application title
     titlePanel("Book Section"),
 
@@ -48,9 +64,16 @@ shinyUI(fluidPage(
             plotOutput("geom_bar"),
             textOutput("result"),
             plotOutput("geom_point"),
-            plotlyOutput("geom_price")#, hover = "plot_hover"),
-           # verbatimTextOutput("info")
-            
+            plotlyOutput("geom_price"),
         )
+    
     )
+),
+tabPanel("Similar Houses",
+    fluidPage(
+        titlePanel("Similar Houses"),
+        
+    )     
+)
+)
 )
