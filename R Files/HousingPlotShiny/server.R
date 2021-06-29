@@ -12,7 +12,12 @@ library(plotly)
 library(ggplot2)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
-
+    
+    observeEvent(input$toggleSidebar, {
+        shinyjs::toggle(id="Sidebar")
+    })
+    
+    
     output$result <- renderText({
         paste("You chose", input$type)
     })
