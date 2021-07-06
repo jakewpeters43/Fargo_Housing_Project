@@ -7,7 +7,6 @@ output: html_document
 
 ```{r}
 library(lme4)
-library(merTools)
 library(tidyverse)
 library(readxl)
 library(lubridate)
@@ -208,36 +207,11 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Exterior Group"=switch(`Exterio
                                                                         "Vinyl Siding"="Brick/Vinyl",
                                                                         "Wood Siding"="Wood/Other"))
 FM_Housing_Clean <- FM_Housing_Clean %>% add_count(`Census Tract`, name="Sales in Tract")
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Census Tract Group" = if_else(`Sales in Tract`>5, `Census Tract`, "Other"))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Census Tract Group" = if_else(`Sales in Tract`>100, `Census Tract`, "Other"))
 List_Inflation <- lm(`Sold Price` ~poly(as.numeric(`Start Date`), 3), data=FM_Housing_Clean)
 FM_Housing_Clean$`Price Index`<- 100*predict(List_Inflation)/269563.3
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Adjusted Price"=`Sold Price`*100/`Price Index`)
 ```
-
-```{r}
-FM_Housing_Raw %>% select(c("Garage Type")) %>% distinct()
-
-ggplot(data=FM_Housing_Clean %>% filter(`Census Tract` %in% c("40508", "602", "20600") & `Sold Date`>=as.Date("2020-01-01")), mapping=aes(x=`Total SqFt.`, y=`Real Sold Price`)) + geom_point(mapping=aes(color=`Census Tract`)) + geom_smooth(method="lm", color="black") + theme_bw() + labs(title="Linear Model", subtitle="Square Footage vs. Sales Price", x="Square Footage", y="Sales Price ($)", color="Census Tract")
-
-ggplot(data=FM_Housing_Clean %>% filter(`Census Tract` %in% c("40508", "602", "20600") & `Sold Date`>=as.Date("2020-01-01")), mapping=aes(x=`Total SqFt.`, y=`Real Sold Price`, color=`Census Tract`)) + geom_point() + geom_smooth(method="lm") + theme_bw() + labs(title="Hierarchical Model", subtitle="Square Footage vs. Sales Price", x="Square Footage", y="Sales Price ($)", color="Census Tract")
-
-
-pct <- function(x) (x/lag(x)-1)*100
-FM_Agg_Monthly <- FM_Agg_Monthly %>% cbind(FM_Agg_Monthly %>% arrange(`Period`) %>% select(c("Seasonally-corrected MRI")) %>% pct() %>% rename("% Change in MRI"="Seasonally-corrected MRI"))
-FM_Agg_Monthly <- FM_Agg_Monthly %>% cbind(FM_Agg_Monthly %>% arrange(`Period`) %>% select(c("Median Sold Price in Period")) %>% pct() %>% rename("% Change in Median Sales Price"="Median Sold Price in Period"))
-FM_Agg_Monthly <- FM_Agg_Monthly %>% cbind(FM_Agg_Monthly %>% arrange(`Period`) %>% select(c("Unemployment-adjusted Affordability Index")) %>% pct() %>% rename("% Change in Affordability"="Unemployment-adjusted Affordability Index"))
-
-ggplot(data=FM_Agg_Monthly %>% arrange(`Period`) %>% filter(Period >=as.Date("2005-01-01"), Period < as.Date("2020-12-01")), mapping=aes(x=`Period`)) + geom_line(mapping=aes(y=`% Change in Affordability`, color="Affordability")) + geom_line(mapping=aes(y=`% Change in MRI`, color="Months Remaining Inventory")) + theme_bw() +  scale_color_manual("", 
-                      breaks = c("Months Remaining Inventory", "Affordability"),
-                      values = c("red", "blue"))
-
-ggplot(data=FM_Agg_Monthly %>% filter(Period>=as.Date("2005-01-01"), Period < as.Date("2021-01-01")), mapping=aes(x=Period)) + geom_line(mapping=aes(y=`Seasonally-corrected MRI`, color="Months Remaining Inventory"), size=.75) + geom_line(mapping=aes(y=`Unemployment-adjusted Affordability Index`/100, color="Affordability"), size=.75) + theme_bw() +  scale_color_manual("", 
-                      breaks = c("Months Remaining Inventory", "Affordability"),
-                      values = c("red", "blue")) + labs(title="Market Conditions over Time", subtitle="Months Remaining Inventory and Affordability", x="Date", y="Index Value")
-
-FM_Housing_Clean %>% filter(`Sold Date`>=as.Date("2020-01-01")) %>% group_by(`Census Tract`) %>% summarize("Median Real Sold Price"=median(`Sold Price`), "Sales in Tract"=n()) %>% left_join(FM_Housing_Clean %>% select(c("Census Tract", "City"))) %>% distinct(`Census Tract`, .keep_all=TRUE) %>% filter(`Sales in Tract` > 50) %>% ggplot() + geom_col(mapping=aes(x=`Census Tract`, y=`Median Real Sold Price`, fill=`City`)) + theme_bw() + theme(axis.text.x = element_text(angle=90)) + scale_y_continuous(labels=dollar_format()) + labs(title="House Prices by Census Tract", subtitle="For Selected Neighborhoods in 2020", y="Median Sales Price")
-```
-
 
 ```{r}
 n <- 20
@@ -295,5 +269,5 @@ paste(mean(resamples)-2*sd(resamples), mean(resamples), mean(resamples)+2*sd(res
 sd(resamples)
 
 FM_Housing_Test$predicted <- predict(trainingModel, newdata=FM_Housing_Test, allow.new.levels=TRUE)
-ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
+#ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
 ```
