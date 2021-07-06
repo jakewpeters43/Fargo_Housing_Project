@@ -12,27 +12,24 @@
 library(rsconnect)
 library(shiny)
 library(plotly)
-library(shinyjs)
+#library(shinyjs)
 #FM_Housing_Clean <- na.omit(FM_Housing_Clean[`Year Built`]
 
 # Define UI for application that draws a histogram
 shinyUI(
     navbarPage(inverse = TRUE, "FM_Housing",
-                         
-        
-    
-    
+    tabPanel("Intro",
     fluidPage(
-        useShinyjs(),
-        tabPanel("tab", 
-                 div( id="Sidebar", sidebarPanel(
-                     
-                 )),
-                 mainPanel(actionButton("toggleSidebar", "Toggle sidebar")
-                 )
-        ),
+       # useShinyjs(),
+        # tabPanel("tab", 
+        #          div( id="Sidebar", sidebarPanel(
+        #              
+        #          )),
+        #          mainPanel(actionButton("toggleSidebar", "Toggle sidebar")
+        #          )
+        # ),
         # First Page - Intro        
-        tabPanel("Intro", 
+         
     # Application title
     titlePanel("Book Section"),
 
@@ -73,6 +70,17 @@ tabPanel("Similar Houses",
     fluidPage(
         titlePanel("Similar Houses"),
         
+        radioButtons("bedbutton", "Bed Button:", choices = sort(unique(na.omit(FM_Housing_Clean$`Total Bedrooms`)),decreasing=FALSE),
+                     selected = "3", inline = "TRUE"
+        ),
+        
+        selectInput(inputId = "type", label = strong("Choose Book Section"),
+                    choices = unique(FM_Housing_Clean$`Book Section`),
+                    selected = "Single Family Residence"
+        ),
+        
+        plotlyOutput("geom_filters"),
+        uiOutput("my_button"),
     )     
 )
 )
