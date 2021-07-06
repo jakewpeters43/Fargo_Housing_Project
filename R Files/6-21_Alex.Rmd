@@ -96,7 +96,7 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
   "Dock"="No",
   "Pantry"="No",
   "Walk-in Closet"="No",
-  "Private Bath"="No",
+  "Private Bath"="No"
 ))
 
 FM_Housing_Clean <- droplevels(FM_Housing_Clean)
@@ -148,6 +148,16 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Unemployment-adjusted Affordability
 
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Period"="Period"))
 ```
+
+```{r}
+FM_Housing_filter <-  FM_Housing_Clean %>% filter(`Year Built`>1869) 
+ggplot(data = FM_Housing_filter) + geom_histogram(mapping = aes(x=`Year Built`)) 
+ggplot(data=FM_Housing_Clean) + geom_point(mapping = aes(x=`Geo Lon`,y=`Geo Lat`, color = `Book Section`)) + xlim(-96.925,-96.72) + ylim(46.76,46.935)
+
+ggplot(data = FM_Housing_Clean) + geom_point(mapping=aes(x= `Months Remaining Inventory`, y=`Sold Price`))
+```
+
+
 
 ```{r}
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
