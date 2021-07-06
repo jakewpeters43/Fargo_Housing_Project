@@ -45,8 +45,8 @@ shinyUI(
             checkboxGroupInput(inputId = "bedrooms", label = strong("Choose # Bedrooms"),
                                choices = unique(FM_Housing_Clean$`Total Bedrooms`),
                                selected = "3"
-                               )
-        ,
+                               ),
+        
         # hoverOpts(id = plot_hover, delay = 300, delayType = c("debounce", "throttle"),
         #           clip = TRUE, nullOutside = TRUE)
              
@@ -70,17 +70,23 @@ tabPanel("Similar Houses",
     fluidPage(
         titlePanel("Similar Houses"),
         
-        radioButtons("bedbutton", "Bed Button:", choices = sort(unique(na.omit(FM_Housing_Clean$`Total Bedrooms`)),decreasing=FALSE),
+        checkboxGroupInput(inputId = "city", "City:", choices = unique(na.omit(FM_Housing_Clean$`City`)),
+                    selected = c("Fargo", "Moorhead", "West Fargo")
+        ),
+        
+        
+        radioButtons(inputId ="bedbuttonsimilar", "Bed Button:", choices = sort(unique(na.omit(FM_Housing_Clean$`Total Bedrooms`)),decreasing=FALSE),
                      selected = "3", inline = "TRUE"
         ),
         
-        selectInput(inputId = "type", label = strong("Choose Book Section"),
+        selectInput(inputId = "book_section", label = strong("Choose Book Section"),
                     choices = unique(FM_Housing_Clean$`Book Section`),
                     selected = "Single Family Residence"
         ),
         
-        plotlyOutput("geom_filters"),
-        uiOutput("my_button"),
+        
+        plotlyOutput("scatterplotFinder")
+       
     )     
 )
 )
