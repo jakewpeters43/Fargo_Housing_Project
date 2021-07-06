@@ -7,7 +7,7 @@
 #    http://shiny.rstudio.com/
 #
 #remotes::install_github("rstudio/reactlog")
-reactlog_enable()
+#reactlog_enable()
 library(shiny)
 library(plotly)
 library(ggplot2)
@@ -44,10 +44,10 @@ shinyServer(function(input, output) {
     }) %>%
         bindCache(input$minprice, input$maxprice)
    
-    bedroom_button <- reactive({
-        df <- FM_Housing_Clean %>% filter(`Total Bedrooms` %in% input$bedbutton)
-    }) %>%
-        bindCache(input$bedbutton)
+    # bedroom_button <- reactive({
+    #     df <- FM_Housing_Clean %>% filter(`Total Bedrooms` %in% input$bedbutton)
+    # }) #%>%
+       # bindCache(input$bedbutton)
     
     output$geom_bar <- renderPlot({
 
@@ -82,51 +82,34 @@ output$geom_filters <- renderPlotly({
         geom_point(mapping = , show.legend = FALSE) +
         xlim(-96.925,-96.72) + ylim(46.76,46.935)
     
+ }) #%>%
+#     bindCache()
+
+similarHouses_finder <- reactive({
     
+    req(input$bedbuttonsimilar)
+    req(input$book_section)
+    req(input$city)
     
+  similar_df <- FM_Housing_Clean %>% filter(`Total Bedrooms` %in% input$bedbuttonsimilar) %>%
+                                     filter(`Book Section` %in% input$book_section) %>%
+                                     filter(`City` %in% input$city)
+ 
+ 
+}) 
+
+output$scatterplotFinder <- renderPlotly({
+    input$bedbutton
+    input$type
+    input$city
+    
+    ggplot(similarHouses_finder(),aes(x=`Geo Lon`,y=`Geo Lat`, color = as.factor(`Census Tract`),label = `Sold Price`)) + #, aes(text=paste("Sold Price=",`Sold Price`))) + 
+        geom_point(mapping = , show.legend = FALSE) +
+        xlim(-96.925,-96.72) + ylim(46.76,46.935)
+
+}) %>%
+    bindCache(similarHouses_finder())
+
+
 })
-
-
-
-
-
-
-actionButton(
-    "geom_filters",
-    label = "I will be updated using reactivity",
-)
-
-
-output$my_button <- renderUI({
-    actionButton("geom_filters", label = input$sample_text)
-})
-   # df <- data.frame(x=c(1,2,3,4,5), y=c(6,7,8,9,10), z=c('a','b','c','d','e'))
-    
-    
-    # Define the content and format of the tooltip in the "text" aesthetic
-    # p <- ggplot(df, aes(x=x, y=y, 
-    #                     text=paste("X=",x,"<br>Y=",y,"<br>Z=",z))) + 
-    #     geom_point()
-    # 
-    # 
-    # p <- ggplotly(p, tooltip="text")
-    # print(p)
-    
-    
-    output$info <- renderText({
-        xy_str <- function(e) {
-            if(is.null(e)) return("NULL\n")
-            paste0("x=", round(e$x, 1), "y=", round(e$y, 1), "\n")
-        }
-        xy_range_str <- function(e) {
-            if(is.null(e)) return("NULL\n")
-            paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1), 
-                   " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
-        }
-        
-        paste0(
-            "hover: ", xy_str(input$plot_hover)
-        )
-    })
-})
-shiny::reactlogShow()
+#shiny::reactlogShow()
