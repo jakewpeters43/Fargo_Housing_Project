@@ -6,10 +6,12 @@
 #
 #    http://shiny.rstudio.com/
 #
-
+#remotes::install_github("rstudio/reactlog")
+reactlog_enable()
 library(shiny)
 library(plotly)
 library(ggplot2)
+library(reactlog)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
     
@@ -42,6 +44,10 @@ shinyServer(function(input, output) {
     }) %>%
         bindCache(input$minprice, input$maxprice)
    
+    bedroom_button <- reactive({
+        df <- FM_Housing_Clean %>% filter(`Total Bedrooms` %in% input$bedbutton)
+    }) %>%
+        bindCache(input$bedbutton)
     
     output$geom_bar <- renderPlot({
 
@@ -69,7 +75,31 @@ shinyServer(function(input, output) {
         #ggplotly(p)
     }) %>%
         bindCache(geom_price())
+    
+output$geom_filters <- renderPlotly({
+    
+    ggplot(bedroom_button(),aes(x=`Geo Lon`,y=`Geo Lat`, color = as.factor(`Census Tract`),label = `Sold Price`)) + #, aes(text=paste("Sold Price=",`Sold Price`))) + 
+        geom_point(mapping = , show.legend = FALSE) +
+        xlim(-96.925,-96.72) + ylim(46.76,46.935)
+    
+    
+    
+})
 
+
+
+
+
+
+actionButton(
+    "geom_filters",
+    label = "I will be updated using reactivity",
+)
+
+
+output$my_button <- renderUI({
+    actionButton("geom_filters", label = input$sample_text)
+})
    # df <- data.frame(x=c(1,2,3,4,5), y=c(6,7,8,9,10), z=c('a','b','c','d','e'))
     
     
@@ -98,8 +128,5 @@ shinyServer(function(input, output) {
             "hover: ", xy_str(input$plot_hover)
         )
     })
-    
-    
-    
-    
 })
+shiny::reactlogShow()
