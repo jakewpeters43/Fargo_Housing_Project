@@ -12,6 +12,8 @@
 library(rsconnect)
 library(shiny)
 library(plotly)
+library(shinyWidgets)
+
 #library(shinyjs)
 #FM_Housing_Clean <- na.omit(FM_Housing_Clean[`Year Built`]
 
@@ -69,19 +71,35 @@ shinyUI(
 tabPanel("Similar Houses",
     fluidPage(
         titlePanel("Similar Houses"),
-        
-        checkboxGroupInput(inputId = "city", "City:", choices = unique(na.omit(FM_Housing_Clean$`City`)),
-                    selected = c("Fargo", "Moorhead", "West Fargo")
+    
+        pickerInput(
+            inputId = "city",
+            label = "Choose City: ", 
+            choices = unique(na.omit(FM_Housing_Clean$`City`)),
+            selected = unique(na.omit(FM_Housing_Clean$`City`)),
+            options = list(
+                `actions-box` = TRUE), 
+            multiple = TRUE
         ),
         
-        
-        radioButtons(inputId ="bedbuttonsimilar", "Bed Button:", choices = sort(unique(na.omit(FM_Housing_Clean$`Total Bedrooms`)),decreasing=FALSE),
-                     selected = "3", inline = "TRUE"
+        pickerInput(
+            inputId = "bedbuttonsimilar",
+            label = "Choose Number of Bedrooms: ", 
+            choices = sort(unique(na.omit(FM_Housing_Clean$`Total Bedrooms`)),decreasing=FALSE),
+            selected = sort(unique(na.omit(FM_Housing_Clean$`Total Bedrooms`)),decreasing=FALSE),
+            options = list(
+                `actions-box` = TRUE), 
+            multiple = TRUE
         ),
         
-        selectInput(inputId = "book_section", label = strong("Choose Book Section"),
-                    choices = unique(FM_Housing_Clean$`Book Section`),
-                    selected = "Single Family Residence"
+        pickerInput(
+            inputId = "book_section",
+            label = "Choose House Type: ", 
+            choices = unique(FM_Housing_Clean$`Book Section`),
+            selected = unique(FM_Housing_Clean$`Book Section`),
+            options = list(
+                `actions-box` = TRUE), 
+            multiple = TRUE
         ),
         
         
