@@ -12,6 +12,7 @@ library(shiny)
 library(plotly)
 library(ggplot2)
 library(reactlog)
+library(memoise)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
     
@@ -95,11 +96,11 @@ similarHouses_finder <- reactive({
                                      filter(`Book Section` %in% input$book_section) %>%
                                      filter(`City` %in% input$city)
  
- 
-}) 
+}) #%>%
+   # bindCache(input$bedbuttonsimilar,input$book_section, input$city)
 
 output$scatterplotFinder <- renderPlotly({
-    input$bedbutton
+    input$bedbuttonsimilar
     input$type
     input$city
     
@@ -107,8 +108,8 @@ output$scatterplotFinder <- renderPlotly({
         geom_point(mapping = , show.legend = FALSE) +
         xlim(-96.925,-96.72) + ylim(46.76,46.935)
 
-}) %>%
-    bindCache(similarHouses_finder())
+})# %>%
+   # bindCache(input$bedbuttonsimilar, input$type,input$city,similarHouses_finder())
 
 
 })
