@@ -15,7 +15,23 @@ library(caret)
 ```
 
 ```{r}
-FM_Housing_Raw <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
+FM_Housing_Raw1 <- read_csv(unz("../Data/FM_Housing_Raw_v2.zip", "FM_Housing_raw_1.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer(),
+  `Postal Code` = col_factor()
+))
+
+FM_Housing_Raw2 <- read_csv(unz("../Data/FM_Housing_Raw_v2.zip", "FM_Housing_raw_2.csv"), col_types = cols(
+  `Lease Term` = col_character(),
+  `Directions` = col_character(),
+  `Water Frontage Length` = col_integer(),
+  `Postal Code` = col_factor()
+))
+
+FM_Housing_Raw <- rbind(FM_Housing_Raw1, FM_Housing_Raw2)
+
+FM_Housing_Raw_v1 <- read_csv(unz("../Data/FM_Housing_Raw.zip", "FM_Housing_Raw.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Directions` = col_character(),
   `Water Frontage Length` = col_integer(),
@@ -31,8 +47,16 @@ FM_Tract_Raw <- read_excel("../Data/tract_total.xlsx")
 ```
 
 ```{r}
+FM_Housing_Clean_v1 <- FM_Housing_Raw_v1[!is.na(FM_Housing_Raw_v1$`Geo Lon`) & !is.na(FM_Housing_Raw_v1$`Geo Lat`),]
+FM_Housing_Clean_v1 <- FM_Housing_Clean_v1 %>% cbind("Census Tract"=FM_Tract_Raw$tractvec)
+FM_Housing_Clean <- FM_Housing_Raw %>% left_join(FM_Housing_Clean_v1 %>% select(c("Geo Lat", "Geo Lon", "Census Tract")), by=c("Geo Lat", "Geo Lon"))
+
+FM_Housing_Clean %>% filter(is.na(`Census Tract`) & !is.na(`Geo Lat`) & !is.na(`Geo Lon`)) %>% select(c("Geo Lat","Geo Lon"))
+```
+
+```{r}
 FM_Housing_Clean <- FM_Housing_Raw[!is.na(FM_Housing_Raw$`Geo Lon`) & !is.na(FM_Housing_Raw$`Geo Lat`),]
-FM_Housing_Clean <- FM_Housing_Clean %>% cbind("Census Tract"=as.character(FM_Tract_Raw$tractvec))
+#FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Tract_Raw, by=c("Geo Lat", "Geo Lon"))
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("Property Type", "Card Format")) #All properties are Residential for both Property Type and Card Format variables
 FM_Housing_Clean <- FM_Housing_Clean %>% select(-c("List Number", "Directions")) #Arbitrary values not useful for data mining
 FM_Housing_Clean$`Year Built`[FM_Housing_Clean$`Year Built` < 1600 | FM_Housing_Clean$`Year Built` > 2021] <- NA
@@ -159,9 +183,10 @@ FM_Agg_Monthly <- FM_Agg_Monthly %>% mutate("Unemployment-adjusted Affordability
 FM_Housing_Clean <- FM_Housing_Clean %>% left_join(FM_Agg_Monthly, by=c("List Period"="Period"))
 ```
 
+
 ```{r}
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("New Construction"=if_else(`New Construction Type`=="No", "No", "Yes"))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("New Construction"=if_else(`New Construction Type`=="No", 0, 1))
 FM_Housing_Clean <- FM_Housing_Clean %>% rowwise %>% mutate("Style Group"=switch(`Style`,
                                                                 "1 Story" = "1 Story",
                                                                 "1 1/2 Stor" = "1.5 Story",
@@ -211,6 +236,15 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Census Tract Group" = if_else(`
 List_Inflation <- lm(`Sold Price` ~poly(as.numeric(`Start Date`), 3), data=FM_Housing_Clean)
 FM_Housing_Clean$`Price Index`<- 100*predict(List_Inflation)/269563.3
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Adjusted Price"=`Sold Price`*100/`Price Index`)
+```
+
+
+```{r}
+ggplot(data=FM_Agg_Monthly %>% filter(Period>=as.Date("2005-01-01"), Period < as.Date("2020-01-01")), mapping=aes(x=Period)) + geom_line(mapping=aes(y=`Seasonally-corrected MRI`, color="Months Remaining Inventory"), size=.75) + geom_line(mapping=aes(y=`Unemployment-adjusted Affordability Index`/100, color="Affordability"), size=.75) + theme_bw() +  scale_color_manual("", 
+                      breaks = c("Months Remaining Inventory", "Affordability"),
+                      values = c("red", "blue")) + labs(title="Market Conditions over Time", subtitle="Months Remaining Inventory and Affordability", x="Date", y="Index Value")
+
+FM_Housing_Clean %>% group_by(`List Period`) %>% summarize("New Properties Built"=sum(`New Construction`)) %>% ggplot(aes(`List Period`, `New Properties Built`)) + geom_line() + geom_smooth() + xlim(as.Date("2000-01-01"),as.Date("2020-05-01"))
 ```
 
 ```{r}
