@@ -13,7 +13,7 @@ library(lubridate)
 ```
 
 ```{r}
-FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv", col_types = cols(
+FM_Housing_Clean <- read_csv(unz("../Data/FM_Housing_Clean.zip", "FM_Housing_Clean.csv"), col_types = cols(
   `Lease Term` = col_character(),
   `Water Frontage Length` = col_integer(),
   `Postal Code` = col_character(),

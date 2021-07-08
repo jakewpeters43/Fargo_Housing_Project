@@ -7,7 +7,6 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#setwd("C:/Users/13204/Documents/Github/")
 library(leaflet)
 library(tidyverse)
 library(readxl)
@@ -15,13 +14,13 @@ library(lubridate)
 library(stringr)
 library(caret)
 library(lme4)
+library(htmltools)
 ```
+
+
 ```{r}
 FM_Housing_Clean <- read_csv(unz("../Data/FM_Housing_Clean.zip", "FM_Housing_Clean.csv"))
-
 ```
-
-## R Markdown
 
 
 ```{r}
@@ -39,7 +38,7 @@ map <- leaflet() %>%
   addProviderTiles(maptypes[4]) %>%
   addCircleMarkers(lng = leaflet_finder$elon, lat = leaflet_finder$elat,
              clusterOptions = markerClusterOptions(maxClusterRadius = 100, disableClusteringAtZoom = 16, spiderfyOnMaxZoom = FALSE), radius = 5, 
-  popup = paste0("<img src=",leaflet_finder$`Photo URL`,">", "<center>",leaflet_finder$`Sold Price` , "</center>", "<center>",leaflet_finder$`Street Address`, "</center>")
+  label = lapply(paste0("<img src=",leaflet_finder$`Photo URL`,"><br>",leaflet_finder$`Sold Price` ,"<br>",leaflet_finder$`Street Address`), HTML), labelOptions=labelOptions(style=list("text-align"="center"))
              )
 
 map
