@@ -1,0 +1,142 @@
+---
+title: "FM_Housing Workspace - Alex"
+author: "Alex Voigt & Jake Peters"
+date: "6/4/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(stringr)
+library(caret)
+library(lme4)
+```
+
+```{r}
+FM_Agg_Monthly <- read_csv("../Data/FM_Agg_Monthly.csv")
+
+
+New_Data <- read_csv("../Data/FM_On_Market_2021_07_06.csv")
+```
+
+```{r}
+New_Data_Clean <- New_Data %>% select(-c("Property Type", "Card Format", "List Number", "Directions"))
+New_Data_Clean <- New_Data_Clean %>% mutate("List Period" = floor_date(System.Date(), "month"))
+New_Data_Clean <- New_Data_Clean %>% mutate("Building Age" = as.integer(format(`Start Date`, "%Y")) - `Year Built`)
+
+Features <- str_match_all(FM_Housing_Clean$Features, "([^\\|]*)\\|([^\\|]*)\\|([^;]*);")
+
+for(i in 1:length(Features)) {
+  Features[[i]] <- Features[[i]][,2:4] %>% cbind(i)
+}
+
+Features_Clean <- as.data.frame(do.call(rbind, Features)) %>% rename("Index" = i)
+
+New_Data_Clean <- New_Data_Clean %>% mutate("Index"=factor(1:nrow(FM_Housing_Clean)))
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V1=="Air Conditioning") %>% select("Index", V2)) %>% rename("Air Conditioning"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V1=="Foundation") %>% select("Index", V2)) %>% rename("Foundation"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V1=="Exterior") %>% select("Index", V2)) %>% rename("Exterior"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="New Construction") %>% select("Index", V3)) %>% rename("New Construction Type"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V1=="Roof") %>% select("Index", V2)) %>% rename("Roof"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V1=="Water Heater") %>% select("Index", V2)) %>% rename("Water Heater"=V2) %>% distinct(Index, .keep_all=TRUE) 
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Kitchen Island") %>% select("Index", V3)) %>% rename("Kitchen Island"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Patio") %>% select("Index", V3)) %>% rename("Patio"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Wood Deck"|V2=="Maint. Free Deck") %>% select("Index", V2)) %>% rename("Deck"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Fenced Partial"|V2=="Fenced Full") %>% select("Index", V2)) %>% rename("Fence"=V2) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Pool") %>% select("Index", V3)) %>% rename("Pool"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Spa/Hot Tub") %>% select("Index", V3)) %>% rename("Spa/Hot Tub"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Sprinkler System") %>% select("Index", V3)) %>% rename("Sprinkler System"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Gazebo") %>% select("Index", V3)) %>% rename("Gazebo"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Dock") %>% select("Index", V3)) %>% rename("Dock"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Pantry") %>% select("Index", V3)) %>% rename("Pantry"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Walk-in Closet") %>% select("Index", V3)) %>% rename("Walk-in Closet"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V2=="Private Bath") %>% select("Index", V3)) %>% rename("Private Bath"=V3) %>% distinct(Index, .keep_all=TRUE)
+
+New_Data_Clean <- New_Data_Clean %>% replace_na(list(
+  "Air Conditioning"="None",
+  "Foundation"="Other",
+  "Exterior"="Other",
+  "New Construction Type"="No",
+  "Roof"="Other",
+  "Water Heater"="Other",
+  "Kitchen Island"="No",
+  "Patio"="No",
+  "Deck"="None",
+  "Fence"="None",
+  "Pool"="No",
+  "Sprinkler System"="No",
+  "Gazebo"="No",
+  "Dock"="No",
+  "Pantry"="No",
+  "Walk-in Closet"="No",
+  "Private Bath"="No",
+  "Spa/Hot Tub"="No",
+))
+
+New_Data_Clean <- droplevels(New_Data_Clean)
+
+###AGGREGATED PROCESSING HERE###
+
+New_Data_Clean <- New_Data_Clean %>% mutate("Has Air Conditioning"=if_else(`Air Conditioning`=="None", "No", "Yes"))
+New_Data_Clean <- New_Data_Clean %>% mutate("New Construction"=if_else(`New Construction Type`=="No", "No", "Yes"))
+New_Data_Clean <- New_Data_Clean %>% rowwise %>% mutate("Style Group"=switch(`Style`,
+                                                                "1 Story" = "1 Story",
+                                                                "1 1/2 Stor" = "1.5 Story",
+                                                                "2 Story" = "2+ Story",
+                                                                "3 Story" = "2+ Story",
+                                                                "3 Level" = "Split Level",
+                                                                "4 Level" = "Split Level",
+                                                                "Bi Level" = "Bi-Level",
+                                                                "Other"))
+New_Data_Clean <- New_Datag_Clean %>% mutate("Roof Group"=if_else(`Roof` %in% c("Shingle", "Architectural Shingle"), as.character(`Roof`), "Other"))
+New_Data_Clean <- New_Data_Clean %>%  mutate("Book Section Group"=switch(`Book Section`,
+                                                                "Lake Property"="Single Family Residence",
+                                                                "Condominium" = "Condominium",
+                                                                "Single Family Residence" = "Single Family Residence",
+                                                                "Townhouse" = "Townhouse/Twinhome",
+                                                                "Twinhomes" = "Townhouse/Twinhome",
+                                                                "Other"))
+New_Data_Clean <- New_Data_Clean %>% mutate("Water Heater Group"=if_else(`Water Heater`=="Gas", "Gas", "Electric/Other"))
+New_Data_Clean <- New_Data_Clean %>% mutate("Has Fence"=if_else(`Fence`=="None", "No", "Yes"))
+New_Data_Clean <- New_Data_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None", "No", "Yes"))
+
+New_Data_Clean <- New_Data_Clean %>% mutate("Real Sold Price"=`Sold Price`*261.560/`CPI`)
+New_Data_Clean <- New_Data_Clean %>% mutate("Log Price"=log(`Sold Price`)) %>% filter(`Sold Price`>0)
+New_Data_Clean <- New_Data_Clean %>% mutate("Log SqFt"=log(`Total SqFt.`))
+New_Data_Clean <- New_Data_Clean %>% mutate("Foundation Group"=switch(`Foundation`,
+                                              "Block"="Basement",
+                                              "Brick/Mortar"="Basement",
+                                              "Crawl Space"="Crawl Space",
+                                              "Other"="Other",
+                                              "Partial"="Other",
+                                              "Poured"="Poured",
+                                              "Slab on Grade"="Slab/Wood",
+                                              "Wood"="Slab/Wood",
+                                              "Other"))
+```
+
+```{r}
+FM_Housing_Clean %>% write_csv("../Data/FM_Housing_Clean.csv")
+FM_Agg_Monthly %>% write_csv("../Data/FM_Agg_Monthly.csv")
+```
+
