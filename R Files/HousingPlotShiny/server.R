@@ -9,17 +9,26 @@
 #remotes::install_github("rstudio/reactlog")
 #reactlog_enable()
 library(maptools)
+<<<<<<< HEAD
 library(rgeos) 
 library(sp)
+=======
+>>>>>>> d058b6002cf79fd8a32cc46b279fea9188383eeb
 library(leaflet)
 library(shiny)
 library(htmltools)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
+<<<<<<< HEAD
 
 #FM_Housing_Clean[54773,164] <- "339 12 Avenue E West Fargo ND 58078"
 #FM_Housing_Clean[54767,164] <- "220 10 Avenue E West Fargo ND 58078"
 leaflet_finder <- FM_Housing_Clean %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
+=======
+    
+  FM_Housing_Clean[54767,27] <- "10"
+leaflet_finder <- FM_Housing_Clean %>% tail(2500) %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
+>>>>>>> d058b6002cf79fd8a32cc46b279fea9188383eeb
 similarHouses_finder <- reactive({
   
     req(input$bedbuttonsimilar)
