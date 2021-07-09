@@ -10,9 +10,7 @@
 
 # rsconnect::deployApp('C:\\Users\\13204\\Documents\\GitHub\\FM-Housing\\R Files\\HousingPlotShiny')
 library(leaflet)
-library(rsconnect)
 library(shiny)
-library(plotly)
 library(shinyWidgets)
 
 #library(shinyjs)

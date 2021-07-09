@@ -6,55 +6,31 @@ output: html_document
 ---
 
 ```{r}
-knitr::opts_chunk$set(echo = TRUE)
-#setwd("C:/Users/13204/Documents/Github/")
 library(leaflet)
 library(tidyverse)
 library(htmltools)
+
+FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv.gz", col_types = cols(
+  `Lease Term` = col_character(),
+  `Water Frontage Length` = col_integer(),
+  `Postal Code` = col_character(),
+  `Address #` = col_character(),
+  `Occupant Phone 2` = col_character(),
+  `Finance` = col_character(),
+  `Sheyenne Unpd` = col_character()
+))
 ```
-```{r}
-FM_Housing_Clean <- read_csv(unz("../Data/FM_Housing_Clean.zip", "FM_Housing_Clean.csv"))
-
-```
-
-## R Markdown
-
 
 ```{r}
-<<<<<<< Updated upstream
-maptypes <- c("MapQuestOpen.Aerial",
-               "Stamen.TerrainBackground",
-               "Esri.WorldImagery",
-               "OpenStreetMap",
-               "Stamen.Watercolor")
-
-
-FM_Housing_trunc <- FM_Housing_Clean %>% head(54766)
-leaflet_finder <- rename(FM_Housing_trunc, "elat"="Geo Lat" , "elon"="Geo Lon")
-
-map <- leaflet() %>%
-  addProviderTiles(maptypes[4]) %>%
-  addCircleMarkers(lng = leaflet_finder$elon, lat = leaflet_finder$elat,
-             clusterOptions = markerClusterOptions(maxClusterRadius = 100, disableClusteringAtZoom = 16, spiderfyOnMaxZoom = FALSE), radius = 5, 
-  label = lapply(paste0("<img src=",leaflet_finder$`Photo URL`,">", "<br>", "$ ",leaflet_finder$`Sold Price` , "<br>",leaflet_finder$`Street Address`, "<br>"), HTML), labelOptions = labelOptions(style=list("text-align" ="center"))
-             )
-=======
-FM_Housing_trunc <- FM_Housing_Clean %>% head(7119)
-leaflet_finder <- rename(FM_Housing_trunc, "elat"="Geo Lat" , "elon"="Geo Lon")
-
 map <- leaflet() %>% 
 	addProviderTiles("OpenStreetMap") %>% 
 	addCircleMarkers(
-		lng = leaflet_finder$elon, lat = leaflet_finder$elat, clusterOptions = markerClusterOptions(radius = 1, 
-  label = lapply(paste0("<img src=",leaflet_finder$`Photo URL`,"><br>",leaflet_finder$`Sold Price` ,"<br>",leaflet_finder$`Street Address`), HTML), labelOptions=labelOptions(style=list("text-align"="center"))
+		lng = FM_Housing_Clean$`Geo Lon`, lat = FM_Housing_Clean$`Geo Lat`, clusterOptions = markerClusterOptions(radius = 1, 
+  label = lapply(paste0("<img src=",FM_Housing_Clean$`Photo URL`,"><br>",FM_Housing_Clean$`Sold Price` ,"<br>",FM_Housing_Clean$`Street Address`), HTML), labelOptions=labelOptions(style=list("text-align"="center"))
              ))
->>>>>>> Stashed changes
 
 map
 
 ```
 
-```{r}
-View(FM_Housing_Clean[54767,])
-```
 

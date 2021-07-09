@@ -235,9 +235,11 @@ FM_Housing_Clean$`Price Index`<- 100*predict(List_Inflation)/269563.3
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Adjusted Price"=`Sold Price`*100/`Price Index`)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Days Since Listing"=interval(`Start Date`, as.Date("2021-07-07")) %>% as.duration() %>% as.numeric("days"))
+FM_Housing_Clean[54773,27] <- "12"
+FM_Housing_Clean[55149,27] <- "10"
 FM_Housing_Clean$`Street Address` <- apply(FM_Housing_Clean[, c("Address #", "Street Name", "Street Suffix", "Street Direction Sfx", "Unit #", "City", "State/Province", "Postal Code")], 1,
                       function(i){ paste(na.omit(i), collapse = " ") })
-FM_Housing_Clean[54767,27] <- "10"
+FM_Housing_Clean$Index <- 1:nrow(FM_Housing_Clean)
 ```
 
 ```{r}
