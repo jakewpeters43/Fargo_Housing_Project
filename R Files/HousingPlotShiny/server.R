@@ -10,21 +10,16 @@
 #reactlog_enable()
 library(maptools)
 library(rgeos) 
-library(qmap)
 library(sp)
-library(ggmap)
 library(leaflet)
 library(shiny)
-library(plotly)
-library(ggplot2)
-library(reactlog)
-library(memoise)
 library(htmltools)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
-    
-  FM_Housing_Clean[54767,27] <- "10"
-leaflet_finder <- FM_Housing_Clean %>% head(50000) %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
+
+#FM_Housing_Clean[54773,164] <- "339 12 Avenue E West Fargo ND 58078"
+#FM_Housing_Clean[54767,164] <- "220 10 Avenue E West Fargo ND 58078"
+leaflet_finder <- FM_Housing_Clean %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
 similarHouses_finder <- reactive({
   
     req(input$bedbuttonsimilar)
@@ -51,27 +46,21 @@ output$scatterplotFinder <- renderPlot({
 }) %>%
     bindCache(input$book_section, input$bedbuttonsimilar, input$city)
 
-maptypes <- c("MapQuestOpen.Aerial",
-              "Stamen.TerrainBackground",
-              "Esri.WorldImagery",
-              "OpenStreetMap",
-              "Stamen.Watercolor")
-
-
-#FM_Housing_trunc <- FM_Housing_Clean %>% head(4766)
-
 output$map <- renderLeaflet({
   input$bedbuttonsimilar
   input$book_section
   input$city
   
   map1 <- leaflet() %>%
-    addProviderTiles(maptypes[4]) %>%
+    addProviderTiles("OpenStreetMap") %>%
     addCircleMarkers( lng = similarHouses_finder()$`elon`, lat = similarHouses_finder()$`elat`,
                      clusterOptions = markerClusterOptions(maxClusterRadius = 100, disableClusteringAtZoom = 16, spiderfyOnMaxZoom = FALSE), radius = 5, 
-                     label = lapply(paste0("<img src=",similarHouses_finder()$`Photo URL`,">", "<br>", "$ ",similarHouses_finder()$`Sold Price` , "<br>",similarHouses_finder()$`Street Address`, "<br>"), HTML), labelOptions = labelOptions(style=list("text-align" ="center"))
+                     label = lapply(paste0("<img src=",similarHouses_finder()$`Photo URL`,">", 
+                                           "<br>", "$ ",similarHouses_finder()$`Sold Price` , "<br>"
+                                           ,similarHouses_finder()$`Sold Date` , "<br>",similarHouses_finder()$`Street Address`, "<br>"), HTML), 
+                     labelOptions = labelOptions(style=list("text-align" ="center"))
+                    
     )
-  
   map1
 })
 
