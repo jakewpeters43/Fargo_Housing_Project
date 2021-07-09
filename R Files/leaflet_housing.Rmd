@@ -5,16 +5,11 @@ date: "7/8/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r}
 knitr::opts_chunk$set(echo = TRUE)
 #setwd("C:/Users/13204/Documents/Github/")
 library(leaflet)
 library(tidyverse)
-library(readxl)
-library(lubridate)
-library(stringr)
-library(caret)
-library(lme4)
 library(htmltools)
 ```
 ```{r}
@@ -26,6 +21,7 @@ FM_Housing_Clean <- read_csv(unz("../Data/FM_Housing_Clean.zip", "FM_Housing_Cle
 
 
 ```{r}
+<<<<<<< Updated upstream
 maptypes <- c("MapQuestOpen.Aerial",
                "Stamen.TerrainBackground",
                "Esri.WorldImagery",
@@ -42,6 +38,17 @@ map <- leaflet() %>%
              clusterOptions = markerClusterOptions(maxClusterRadius = 100, disableClusteringAtZoom = 16, spiderfyOnMaxZoom = FALSE), radius = 5, 
   label = lapply(paste0("<img src=",leaflet_finder$`Photo URL`,">", "<br>", "$ ",leaflet_finder$`Sold Price` , "<br>",leaflet_finder$`Street Address`, "<br>"), HTML), labelOptions = labelOptions(style=list("text-align" ="center"))
              )
+=======
+FM_Housing_trunc <- FM_Housing_Clean %>% head(7119)
+leaflet_finder <- rename(FM_Housing_trunc, "elat"="Geo Lat" , "elon"="Geo Lon")
+
+map <- leaflet() %>% 
+	addProviderTiles("OpenStreetMap") %>% 
+	addCircleMarkers(
+		lng = leaflet_finder$elon, lat = leaflet_finder$elat, clusterOptions = markerClusterOptions(radius = 1, 
+  label = lapply(paste0("<img src=",leaflet_finder$`Photo URL`,"><br>",leaflet_finder$`Sold Price` ,"<br>",leaflet_finder$`Street Address`), HTML), labelOptions=labelOptions(style=list("text-align"="center"))
+             ))
+>>>>>>> Stashed changes
 
 map
 
