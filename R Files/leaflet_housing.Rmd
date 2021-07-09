@@ -15,6 +15,7 @@ library(lubridate)
 library(stringr)
 library(caret)
 library(lme4)
+library(htmltools)
 ```
 ```{r}
 FM_Housing_Clean <- read_csv(unz("../Data/FM_Housing_Clean.zip", "FM_Housing_Clean.csv"))
@@ -32,18 +33,21 @@ maptypes <- c("MapQuestOpen.Aerial",
                "Stamen.Watercolor")
 
 
-FM_Housing_trunc <- FM_Housing_Clean %>% head(7119)
+FM_Housing_trunc <- FM_Housing_Clean %>% head(54766)
 leaflet_finder <- rename(FM_Housing_trunc, "elat"="Geo Lat" , "elon"="Geo Lon")
 
 map <- leaflet() %>%
   addProviderTiles(maptypes[4]) %>%
   addCircleMarkers(lng = leaflet_finder$elon, lat = leaflet_finder$elat,
              clusterOptions = markerClusterOptions(maxClusterRadius = 100, disableClusteringAtZoom = 16, spiderfyOnMaxZoom = FALSE), radius = 5, 
-  popup = paste0("<img src=",leaflet_finder$`Photo URL`,">", "<center>",leaflet_finder$`Sold Price` , "</center>", "<center>",leaflet_finder$`Street Address`, "</center>")
+  label = lapply(paste0("<img src=",leaflet_finder$`Photo URL`,">", "<br>", "$ ",leaflet_finder$`Sold Price` , "<br>",leaflet_finder$`Street Address`, "<br>"), HTML), labelOptions = labelOptions(style=list("text-align" ="center"))
              )
 
 map
 
 ```
 
+```{r}
+View(FM_Housing_Clean[54767,])
+```
 
