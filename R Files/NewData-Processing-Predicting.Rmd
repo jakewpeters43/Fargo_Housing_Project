@@ -131,6 +131,8 @@ New_Data_Clean <- New_Data_Clean %>% mutate("Foundation Group"=switch(`Foundatio
                                               "Slab on Grade"="Slab/Wood",
                                               "Wood"="Slab/Wood",
                                               "Other"))
+New_Data_Clean$`Street Address` <- apply(New_Data_Clean[, c("Address #", "Street Name", "Street Suffix", "Street Direction Sfx", "Unit #", "City", "State/Province", "Postal Code")], 1,
+                      function(i){ paste(na.omit(i), collapse = " ") })
 
 New_Data_Clean <- New_Data_Clean %>% left_join(FM_Tract_Clean)
 ```

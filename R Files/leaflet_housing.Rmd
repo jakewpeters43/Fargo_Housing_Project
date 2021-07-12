@@ -12,7 +12,14 @@ library(htmltools)
 library(leafgl)
 
 FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv.gz")
+Houses_on_Market_Processed <- read_csv("../Data/Houses_on_Market_Processed.csv")
+Houses_on_Market_Processed <- New_Data_Clean
+Houses_on_Market_Processed$`Street Address` <- apply(Houses_on_Market_Processed[, c("Address #", "Street Name", "Street Suffix", "Street Direction Sfx", "Unit #", "City", "State/Province", "Postal Code")], 1,
+                      function(i){ paste(na.omit(i), collapse = " ") })
+Houses_on_Market_Processed <- Houses_on_Market_Processed %>% mutate("Hedonic Prediction"=exp(`Hedonic Prediction`))
+Houses_on_Market_Processed <- Houses_on_Market_Processed %>% mutate("Prediction from Listing"=exp(`Prediction from Listing`))
 
+Houses_on_Market_Processed %>% select(c("List Price", "Hedonic Prediction", "Prediction from Listing"))
 ```
 
 ```{r}
