@@ -6,74 +6,39 @@
 #
 #    http://shiny.rstudio.com/
 #
-#remotes::install_github("rstudio/reactlog")
-#reactlog_enable()
-library(maptools)
-<<<<<<< HEAD
-library(rgeos) 
-library(sp)
-=======
->>>>>>> d058b6002cf79fd8a32cc46b279fea9188383eeb
 library(leaflet)
+library(leafgl)
+library(sf)
 library(shiny)
 library(htmltools)
 # Define server logic required to plot house types
+
 shinyServer(function(input, output) {
-<<<<<<< HEAD
-
-#FM_Housing_Clean[54773,164] <- "339 12 Avenue E West Fargo ND 58078"
-#FM_Housing_Clean[54767,164] <- "220 10 Avenue E West Fargo ND 58078"
-leaflet_finder <- FM_Housing_Clean %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
-=======
-    
-  FM_Housing_Clean[54767,27] <- "10"
-leaflet_finder <- FM_Housing_Clean %>% tail(2500) %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
->>>>>>> d058b6002cf79fd8a32cc46b279fea9188383eeb
-similarHouses_finder <- reactive({
-  
-    req(input$bedbuttonsimilar)
-    req(input$book_section)
-    req(input$city)
-  
-  similar_df <- leaflet_finder %>% filter(`Total Bedrooms` %in% input$bedbuttonsimilar) %>%
-                                     filter(`Book Section` %in% input$book_section) %>%
-                                     filter(`City` %in% input$city)
- 
-}) 
-
-output$scatterplotFinder <- renderPlot({
+  selected <- reactive({
     input$bedbuttonsimilar
     input$book_section
     input$city
-    
-   
-     ggplot(similarHouses_finder(),aes(x=`elon`,y=`elat`, color = as.factor(`Census Tract`),label = `Sold Price`)) + #, aes(text=paste("Sold Price=",`Sold Price`))) + 
-         geom_point(mapping = , show.legend = FALSE) +
-        xlim(-96.925,-96.72) + ylim(46.76,46.935)
-    
-
-}) %>%
-    bindCache(input$book_section, input$bedbuttonsimilar, input$city)
-
-output$map <- renderLeaflet({
-  input$bedbuttonsimilar
-  input$book_section
-  input$city
   
-  map1 <- leaflet() %>%
-    addProviderTiles("OpenStreetMap") %>%
-    addCircleMarkers( lng = similarHouses_finder()$`elon`, lat = similarHouses_finder()$`elat`,
-                     clusterOptions = markerClusterOptions(maxClusterRadius = 100, disableClusteringAtZoom = 16, spiderfyOnMaxZoom = FALSE), radius = 5, 
-                     label = lapply(paste0("<img src=",similarHouses_finder()$`Photo URL`,">", 
-                                           "<br>", "$ ",similarHouses_finder()$`Sold Price` , "<br>"
-                                           ,similarHouses_finder()$`Sold Date` , "<br>",similarHouses_finder()$`Street Address`, "<br>"), HTML), 
-                     labelOptions = labelOptions(style=list("text-align" ="center"))
-                    
+    FM_Housing_Clean %>% filter(`Total Bedrooms` %in% input$bedbuttonsimilar) %>%
+      filter(`Book Section` %in% input$book_section) %>%
+      filter(`City` %in% input$city)
+  }) 
+
+  output$map <- renderLeaflet({
+    map1 <- leaflet(FM_Housing_Clean, options=leafletOptions(preferCanvas=TRUE)) %>% addTiles() %>% fitBounds(~min(`Geo Lon`), ~min(`Geo Lat`), ~max(`Geo Lon`), ~max(`Geo Lat`))
+  })
+  
+  #current <- FM_Housing_Clean %>% filter(FALSE)
+
+  observe({
+    #new <- selected()
+    #toAdd <- setdiff(new, current)
+    #toRemove <- setdiff(current, new)
+    #current <- new
+    leafletProxy("map", data=FM_Housing_Clean) %>% clearGlLayers() %>% addGlPoints(
+      data=st_as_sf(selected(), coords=c("Geo Lon", "Geo Lat")),
+      radius=10,
+      popup=paste0("<div style=text-align:center><img src=",selected()$`Photo URL`,"><br>Sales Price: $",selected()$`Sold Price`,"<br>Sales Date: ",selected()$`Sold Date` ,"<br>Address: ",selected()$`Street Address`,"</div>")
     )
-  map1
-})
-
-
-
-#shiny::reactlogShow()
+  })
 })

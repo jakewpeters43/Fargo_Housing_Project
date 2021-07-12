@@ -134,7 +134,7 @@ FM_Housing_Clean <- FM_Housing_Clean %>% replace_na(list(
   "Pantry"="No",
   "Walk-in Closet"="No",
   "Private Bath"="No",
-  "Spa/Hot Tub"="No",
+  "Spa/Hot Tub"="No"
 ))
 
 FM_Housing_Clean <- droplevels(FM_Housing_Clean)
@@ -195,12 +195,13 @@ FM_Housing_Clean <- FM_Housing_Clean %>% rowwise %>% mutate("Style Group"=switch
                                                                 "Bi Level" = "Bi-Level",
                                                                 NA))
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Roof Group"=if_else(`Roof` %in% c("Shingle", "Architectural Shingle"), as.character(`Roof`), "Other"))
-FM_Housing_Clean <- FM_Housing_Clean[FM_Housing_Clean$`Book Section`!="Duplex",] %>%  mutate("Book Section Group"=switch(`Book Section`,
+FM_Housing_Clean <- FM_Housing_Clean %>%  mutate("Book Section Group"=switch(`Book Section`,
                                                                 "Lake Property"="Single Family Residence",
                                                                 "Condominium" = "Condominium",
                                                                 "Single Family Residence" = "Single Family Residence",
                                                                 "Townhouse" = "Townhouse/Twinhome",
                                                                 "Twinhomes" = "Townhouse/Twinhome",
+                                                                "Duplex"="Duplex",
                                                                 NA))
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Water Heater Group"=if_else(`Water Heater`=="Gas", "Gas", "Electric/Other"))
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Fence"=if_else(`Fence`=="None", "No", "Yes"))
@@ -235,12 +236,14 @@ FM_Housing_Clean$`Price Index`<- 100*predict(List_Inflation)/269563.3
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Adjusted Price"=`Sold Price`*100/`Price Index`)
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Days Since Listing"=interval(`Start Date`, as.Date("2021-07-07")) %>% as.duration() %>% as.numeric("days"))
+FM_Housing_Clean[54773,27] <- "12"
+FM_Housing_Clean[54767,27] <- "10"
 FM_Housing_Clean$`Street Address` <- apply(FM_Housing_Clean[, c("Address #", "Street Name", "Street Suffix", "Street Direction Sfx", "Unit #", "City", "State/Province", "Postal Code")], 1,
                       function(i){ paste(na.omit(i), collapse = " ") })
 ```
 
 ```{r}
-FM_Housing_Clean %>% write_csv("../Data/FM_Housing_Clean.csv")
+FM_Housing_Clean %>% write_csv("../Data/FM_Housing_Clean.csv.gz")
 FM_Agg_Monthly %>% write_csv("../Data/FM_Agg_Monthly.csv")
 FM_Tract_Clean %>% write_csv("../Data/FM_Tract_Clean.csv")
 ```

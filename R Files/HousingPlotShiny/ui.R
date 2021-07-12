@@ -23,7 +23,7 @@ shinyUI(
 tabPanel("Similar Houses",
     fluidPage(
         titlePanel("Similar Houses"),
-    
+
         pickerInput(
             inputId = "city",
             label = "Choose City: ", 
@@ -31,8 +31,8 @@ tabPanel("Similar Houses",
             selected = unique(na.omit(FM_Housing_Clean$`City`)),
             options = list(
                 `actions-box` = TRUE), 
-            multiple = TRUE
-        ),
+                multiple = TRUE
+            ),
         
         pickerInput(
             inputId = "bedbuttonsimilar",
@@ -54,7 +54,7 @@ tabPanel("Similar Houses",
             multiple = TRUE
         ),
         leafletOutput("map")
-    )     
-)
-)
+            )     
+        )
+    )
 )
