@@ -10,9 +10,7 @@
 
 # rsconnect::deployApp('C:\\Users\\13204\\Documents\\GitHub\\FM-Housing\\R Files\\HousingPlotShiny')
 library(leaflet)
-library(rsconnect)
 library(shiny)
-library(plotly)
 library(shinyWidgets)
 
 
@@ -27,8 +25,8 @@ tabPanel("Similar Houses",
         pickerInput(
             inputId = "city",
             label = "Choose City: ", 
-            choices = unique(na.omit(Houses_on_Market_Processed$`City`)),
-            selected = unique(na.omit(Houses_on_Market_Processed$`City`)),
+            choices = unique(na.omit(FM_Market_Clean$`City`)),
+            selected = unique(na.omit(FM_Market_Clean$`City`)),
             options = list(
                 `actions-box` = TRUE), 
                 multiple = TRUE
@@ -37,8 +35,8 @@ tabPanel("Similar Houses",
         pickerInput(
             inputId = "bedbuttonsimilar",
             label = "Choose Number of Bedrooms: ", 
-            choices = sort(unique(na.omit(Houses_on_Market_Processed$`Total Bedrooms`)),decreasing=FALSE),
-            selected = sort(unique(na.omit(Houses_on_Market_Processed$`Total Bedrooms`)),decreasing=FALSE),
+            choices = sort(unique(na.omit(FM_Market_Clean$`Total Bedrooms`)),decreasing=FALSE),
+            selected = sort(unique(na.omit(FM_Market_Clean$`Total Bedrooms`)),decreasing=FALSE),
             options = list(
                 `actions-box` = TRUE), 
             multiple = TRUE
@@ -47,8 +45,8 @@ tabPanel("Similar Houses",
         pickerInput(
             inputId = "book_section",
             label = "Choose House Type: ", 
-            choices = unique(Houses_on_Market_Processed$`Book Section`),
-            selected = unique(Houses_on_Market_Processed$`Book Section`),
+            choices = unique(FM_Market_Clean$`Book Section`),
+            selected = unique(FM_Market_Clean$`Book Section`),
             options = list(
                 `actions-box` = TRUE), 
             multiple = TRUE
