@@ -13,7 +13,7 @@ library(lubridate)
 ```
 
 ```{r}
-FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv", col_types = cols(
+FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv.gz", col_types = cols(
   `Lease Term` = col_character(),
   `Water Frontage Length` = col_integer(),
   `Postal Code` = col_character(),
@@ -31,26 +31,26 @@ FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv", col_types = cols(
 
 
 ```{r}
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=`Days Since Listing`^(-3))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=`Days Since Listing`^(-2))
 
-n <- 5
+n <- 2
 resamples <- vector(length=n)
 resamples_recent <- vector(length=n)
 trainIndex <- createFolds(FM_Housing_Clean$`Log Price`, k=n, list=TRUE, returnTrain=TRUE)
 for(i in 1:n) {
   FM_Housing_Train <- FM_Housing_Clean[trainIndex[[i]],]
   FM_Housing_Test <- FM_Housing_Clean[-trainIndex[[i]],]
-  scaling <- preProcess(FM_Housing_Train %>% select(`Log Price`, `Log SqFt`, `Total Bedrooms`, `Total Bathrooms`), method=c("YeoJohnson", "center", "scale"))
-  trainScaled <- scaling %>% predict(FM_Housing_Train)
-  testScaled <- scaling %>% predict(FM_Housing_Test)
-  testScaled_recent <- testScaled %>% filter(`Pended Date` >= as.Date("2021-01-01") )
+  #scaling <- preProcess(FM_Housing_Train %>% select(`Log Price`, `Log SqFt`, `Total Bedrooms`, `Total Bathrooms`), method=c("YeoJohnson", "center", "scale"))
+  #trainScaled <- scaling %>% predict(FM_Housing_Train)
+  #testScaled <- scaling %>% predict(FM_Housing_Test)
+  #testScaled_recent <- testScaled %>% filter(`Pended Date` >= as.Date("2021-01-01") )
   
   trainingModel <- lmer(`Log Price`~
                         `Log SqFt`+
                         `Year Built`+
                         `Building Age`+
-                        `Seasonally-corrected MRI`+
-                        `Unemployment-adjusted Affordability Index`+
+                        #`Seasonally-corrected MRI`+
+                        #`Unemployment-adjusted Affordability Index`+
                         `Total Bedrooms`+
                         `Total Bathrooms`+
                         `Garage Stalls`+
@@ -65,7 +65,7 @@ for(i in 1:n) {
                         `Has Fence`+
                         `Sprinkler System`+
                         `Gazebo`+
-                        `Dock`+
+                        #`Dock`+
                         `Pool`+
                         `Pantry`+
                         `Walk-in Closet`+
@@ -74,18 +74,91 @@ for(i in 1:n) {
                         `Foundation Group`+
                         `Book Section Group`+
                         `Exterior`+
-                        (1+`Log SqFt`|`Census Tract`), data=trainScaled, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
+                        (1+`Log SqFt`|`Census Tract`), data=FM_Housing_Train, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
                       
-  testedModel <- predict(trainingModel, newdata=testScaled, allow.new.levels=TRUE)
-  testedModel_recent <- predict(trainingModel, newdata=testScaled_recent, allow.new.levels=TRUE)
-  resamples[i] <- postResample(testedModel, testScaled$`Log Price`)[2]
-  resamples_recent[i] <- postResample(testedModel_recent, testScaled_recent$`Log Price`)[2]
+  testedModel <- predict(trainingModel, newdata=FM_Housing_Test, allow.new.levels=TRUE)
+  #testedModel_recent <- predict(trainingModel, newdata=testScaled_recent, allow.new.levels=TRUE)
+  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Log Price`)[2]
+  #resamples_recent[i] <- postResample(testedModel_recent, testScaled_recent$`Log Price`)[2]
   
-  print(i)
+  #print(i)
 }
 summary(trainingModel)
 paste("Full range: ", mean(resamples), " (", sd(resamples), ")", sep="")
-paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", sep="")
+#paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", sep="")
 
-ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
+#ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
+
+
+New_Data_Clean <- Houses_on_Market_Processed
+New_Data_Clean$`Hedonic Prediction` <- predict(trainingModel, newdata=New_Data_Clean, allow.new.levels=TRUE)
+```
+
+```{r}
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=`Days Since Listing`^(-2))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log List Price"=log(`List Price`))
+
+n <- 2
+resamples <- vector(length=n)
+resamples_recent <- vector(length=n)
+trainIndex <- createFolds(FM_Housing_Clean$`Log Price`, k=n, list=TRUE, returnTrain=TRUE)
+for(i in 1:n) {
+  FM_Housing_Train <- FM_Housing_Clean[trainIndex[[i]],]
+  FM_Housing_Test <- FM_Housing_Clean[-trainIndex[[i]],]
+  #scaling <- preProcess(FM_Housing_Train %>% select(`Log Price`, `Log SqFt`, `Total Bedrooms`, `Total Bathrooms`), method=c("YeoJohnson", "center", "scale"))
+  #trainScaled <- scaling %>% predict(FM_Housing_Train)
+  #testScaled <- scaling %>% predict(FM_Housing_Test)
+  #testScaled_recent <- testScaled %>% filter(`Pended Date` >= as.Date("2021-01-01") )
+  
+  trainingModel <- lmer(`Log Price`~
+                        `List Price`+
+                        `Log SqFt`+
+                        `Year Built`+
+                        `Building Age`+
+                        #`Seasonally-corrected MRI`+
+                        #`Unemployment-adjusted Affordability Index`+
+                        `Total Bedrooms`+
+                        `Total Bathrooms`+
+                        `Garage Stalls`+
+                        `Has Air Conditioning`+
+                        `New Construction`+
+                        `Style Group`+
+                        `Roof Group`+
+                        `Water Heater Group`+
+                        `Kitchen Island`+
+                        `Patio`+
+                        `Has Deck`+
+                        `Has Fence`+
+                        `Sprinkler System`+
+                        `Gazebo`+
+                        #`Dock`+
+                        `Pool`+
+                        `Pantry`+
+                        `Walk-in Closet`+
+                        `Private Bath`+
+                        `Spa/Hot Tub`+
+                        `Foundation Group`+
+                        `Book Section Group`+
+                        `Exterior`+
+                        (1+`Log SqFt`|`Census Tract`), data=FM_Housing_Train, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
+                      
+  testedModel <- predict(trainingModel, newdata=FM_Housing_Test, allow.new.levels=TRUE)
+  #testedModel_recent <- predict(trainingModel, newdata=testScaled_recent, allow.new.levels=TRUE)
+  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Log Price`)[2]
+  #resamples_recent[i] <- postResample(testedModel_recent, testScaled_recent$`Log Price`)[2]
+  
+  #print(i)
+}
+summary(trainingModel)
+paste("Full range: ", mean(resamples), " (", sd(resamples), ")", sep="")
+#paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", sep="")
+
+#ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
+
+New_Data_Clean <- New_Data_Clean %>% mutate("Log List Price"=log(`List Price`))
+New_Data_Clean$`Prediction from Listing` <- predict(trainingModel, newdata=New_Data_Clean, allow.new.levels=TRUE)
+```
+
+```{r}
+New_Data_Clean %>% write_csv("../Data/Houses_On_Market_Processed.csv")
 ```

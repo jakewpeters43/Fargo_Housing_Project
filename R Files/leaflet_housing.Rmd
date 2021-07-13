@@ -5,27 +5,36 @@ date: "7/8/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-#setwd("C:/Users/13204/Documents/Github/")
+```{r}
 library(leaflet)
 library(tidyverse)
-library(readxl)
-library(lubridate)
-library(stringr)
-library(caret)
-library(lme4)
 library(htmltools)
+library(leafgl)
+
+FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv.gz")
+Houses_on_Market_Processed <- read_csv("../Data/Houses_on_Market_Processed.csv")
+Houses_on_Market_Processed <- New_Data_Clean
+Houses_on_Market_Processed$`Street Address` <- apply(Houses_on_Market_Processed[, c("Address #", "Street Name", "Street Suffix", "Street Direction Sfx", "Unit #", "City", "State/Province", "Postal Code")], 1,
+                      function(i){ paste(na.omit(i), collapse = " ") })
+Houses_on_Market_Processed <- Houses_on_Market_Processed %>% mutate("Hedonic Prediction"=exp(`Hedonic Prediction`))
+Houses_on_Market_Processed <- Houses_on_Market_Processed %>% mutate("Prediction from Listing"=exp(`Prediction from Listing`))
+
+Houses_on_Market_Processed %>% select(c("List Price", "Hedonic Prediction", "Prediction from Listing"))
 ```
-```{r}
-FM_Housing_Clean <- read_csv(unz("../Data/FM_Housing_Clean.zip", "FM_Housing_Clean.csv"))
-
-```
-
-## R Markdown
-
 
 ```{r}
+selected <- FM_Housing_Clean
+current <- FM_Housing_Clean %>% filter(FALSE)
+
+selected <- FM_Housing_Clean %>% filter(FALSE)
+
+new <- selected
+toAdd <- setdiff(new, current)
+toRemove <- setdiff(current, new)
+#ADD AND REMOVE
+current <- new
+
+
 maptypes <- c("MapQuestOpen.Aerial",
                "Stamen.TerrainBackground",
                "Esri.WorldImagery",
@@ -45,9 +54,5 @@ map <- leaflet() %>%
 
 map
 
-```
-
-```{r}
-View(FM_Housing_Clean[54767,])
 ```
 

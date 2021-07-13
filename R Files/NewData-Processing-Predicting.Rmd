@@ -16,14 +16,14 @@ library(lme4)
 
 ```{r}
 FM_Agg_Monthly <- read_csv("../Data/FM_Agg_Monthly.csv")
-
+FM_Tract_Clean <- read_csv("../Data/FM_Tract_Clean.csv")
 
 New_Data <- read_csv("../Data/FM_On_Market_2021_07_06.csv")
 ```
 
 ```{r}
 New_Data_Clean <- New_Data %>% select(-c("Property Type", "Card Format", "List Number", "Directions"))
-New_Data_Clean <- New_Data_Clean %>% mutate("List Period" = floor_date(System.Date(), "month"))
+New_Data_Clean <- New_Data_Clean %>% mutate("List Period" = floor_date(Sys.Date(), "month"))
 New_Data_Clean <- New_Data_Clean %>% mutate("Building Age" = as.integer(format(`Start Date`, "%Y")) - `Year Built`)
 
 Features <- str_match_all(FM_Housing_Clean$Features, "([^\\|]*)\\|([^\\|]*)\\|([^;]*);")
@@ -34,7 +34,7 @@ for(i in 1:length(Features)) {
 
 Features_Clean <- as.data.frame(do.call(rbind, Features)) %>% rename("Index" = i)
 
-New_Data_Clean <- New_Data_Clean %>% mutate("Index"=factor(1:nrow(FM_Housing_Clean)))
+New_Data_Clean <- New_Data_Clean %>% mutate("Index"=factor(1:nrow(New_Data_Clean)))
 
 New_Data_Clean <- New_Data_Clean %>% left_join(Features_Clean %>% filter(V1=="Air Conditioning") %>% select("Index", V2)) %>% rename("Air Conditioning"=V2) %>% distinct(Index, .keep_all=TRUE)
 
@@ -90,7 +90,7 @@ New_Data_Clean <- New_Data_Clean %>% replace_na(list(
   "Pantry"="No",
   "Walk-in Closet"="No",
   "Private Bath"="No",
-  "Spa/Hot Tub"="No",
+  "Spa/Hot Tub"="No"
 ))
 
 New_Data_Clean <- droplevels(New_Data_Clean)
@@ -108,20 +108,18 @@ New_Data_Clean <- New_Data_Clean %>% rowwise %>% mutate("Style Group"=switch(`St
                                                                 "4 Level" = "Split Level",
                                                                 "Bi Level" = "Bi-Level",
                                                                 "Other"))
-New_Data_Clean <- New_Datag_Clean %>% mutate("Roof Group"=if_else(`Roof` %in% c("Shingle", "Architectural Shingle"), as.character(`Roof`), "Other"))
+New_Data_Clean <- New_Data_Clean %>% mutate("Roof Group"=if_else(`Roof` %in% c("Shingle", "Architectural Shingle"), as.character(`Roof`), "Other"))
 New_Data_Clean <- New_Data_Clean %>%  mutate("Book Section Group"=switch(`Book Section`,
                                                                 "Lake Property"="Single Family Residence",
                                                                 "Condominium" = "Condominium",
                                                                 "Single Family Residence" = "Single Family Residence",
                                                                 "Townhouse" = "Townhouse/Twinhome",
                                                                 "Twinhomes" = "Townhouse/Twinhome",
+                                                                "Duplex"="Duplex",
                                                                 "Other"))
 New_Data_Clean <- New_Data_Clean %>% mutate("Water Heater Group"=if_else(`Water Heater`=="Gas", "Gas", "Electric/Other"))
 New_Data_Clean <- New_Data_Clean %>% mutate("Has Fence"=if_else(`Fence`=="None", "No", "Yes"))
 New_Data_Clean <- New_Data_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None", "No", "Yes"))
-
-New_Data_Clean <- New_Data_Clean %>% mutate("Real Sold Price"=`Sold Price`*261.560/`CPI`)
-New_Data_Clean <- New_Data_Clean %>% mutate("Log Price"=log(`Sold Price`)) %>% filter(`Sold Price`>0)
 New_Data_Clean <- New_Data_Clean %>% mutate("Log SqFt"=log(`Total SqFt.`))
 New_Data_Clean <- New_Data_Clean %>% mutate("Foundation Group"=switch(`Foundation`,
                                               "Block"="Basement",
@@ -133,10 +131,9 @@ New_Data_Clean <- New_Data_Clean %>% mutate("Foundation Group"=switch(`Foundatio
                                               "Slab on Grade"="Slab/Wood",
                                               "Wood"="Slab/Wood",
                                               "Other"))
-```
+New_Data_Clean$`Street Address` <- apply(New_Data_Clean[, c("Address #", "Street Name", "Street Suffix", "Street Direction Sfx", "Unit #", "City", "State/Province", "Postal Code")], 1,
+                      function(i){ paste(na.omit(i), collapse = " ") })
 
-```{r}
-FM_Housing_Clean %>% write_csv("../Data/FM_Housing_Clean.csv")
-FM_Agg_Monthly %>% write_csv("../Data/FM_Agg_Monthly.csv")
+New_Data_Clean <- New_Data_Clean %>% left_join(FM_Tract_Clean)
 ```
 
