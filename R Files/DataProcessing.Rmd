@@ -208,7 +208,7 @@ FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Fence"=if_else(`Fence`=="No
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Has Deck"=if_else(`Deck`=="None", "No", "Yes"))
 
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Real Sold Price"=`Sold Price`*261.560/`CPI`)
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log Price"=log(`Sold Price`)) %>% filter(`Sold Price`>0)
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log Price"=log(`Real Sold Price`)) %>% filter(`Real Sold Price`>0)
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Log SqFt"=log(`Total SqFt.`))
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Foundation Group"=switch(`Foundation`,
                                               "Block"="Basement",
