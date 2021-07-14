@@ -17,9 +17,8 @@ library(htmltools)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
   
-FM_Housing_Clean[54773,164] <- "339 12 Avenue E West Fargo ND 58078"
-FM_Housing_Clean[54767,164] <- "220 10 Avenue E West Fargo ND 58078"
-leaflet_finder <- FM_Housing_Clean %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
+
+leaflet_finder <- FM_Market_Clean %>% rename("elat"="Geo Lat" , "elon"="Geo Lon")
 
 similarHouses_finder <- reactive({
   

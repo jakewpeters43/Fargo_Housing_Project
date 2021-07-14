@@ -1,4 +1,5 @@
 library(tidyverse)
+
 FM_Market_Clean <- read_csv("FM_Market_Clean.csv")
 
 FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`Adjustment Prediction` <- FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`List Price`
