@@ -85,23 +85,21 @@ ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0
 ```
 
 ```{r}
-coefficients <- seq(-0.004, -0.001, 0.0001)
-rvals <- vector(length=n)
-rvals_recent <- vector(length=n)
-
-for (k in 1:length(coefficients)) {
-  FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=exp(coefficients[k]*`Days Since Listing`))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=exp(-0.002*`Days Since Listing`))
+FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Price Diff"=`Sold Price`-`List Price`)
 
 n <- 5
 resamples <- vector(length=n)
 resamples_recent <- vector(length=n)
-trainIndex <- createFolds(FM_Housing_Clean$`Log Price`, k=n, list=TRUE, returnTrain=TRUE)
+trainIndex <- createFolds(FM_Housing_Clean$`Price Diff`, k=n, list=TRUE, returnTrain=TRUE)
 for(i in 1:n) {
   FM_Housing_Train <- FM_Housing_Clean[trainIndex[[i]],]
   FM_Housing_Test <- FM_Housing_Clean[-trainIndex[[i]],]
   FM_Housing_Test_recent <- FM_Housing_Test %>% filter(`Pended Date` >= as.Date("2021-01-01"))
   
-  trainingModel <- lmer(`Log Price`~
+  trainingModel <- lmer(`Price Diff`~
+                        `Seasonally-corrected MRI`+
+                        `Unemployment-adjusted Affordability Index`+
                         `Log SqFt`+
                         `Year Built`+
                         `Building Age`+
@@ -131,14 +129,14 @@ for(i in 1:n) {
                       
   testedModel <- predict(trainingModel, newdata=FM_Housing_Test, allow.new.levels=TRUE)
   testedModel_recent <- predict(trainingModel, newdata=FM_Housing_Test_recent, allow.new.levels=TRUE)
-  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Log Price`)[2]
-  resamples_recent[i] <- postResample(testedModel_recent, FM_Housing_Test_recent$`Log Price`)[2]
+  resamples[i] <- postResample(testedModel, FM_Housing_Test$`Price Diff`)[2]
+  resamples_recent[i] <- postResample(testedModel_recent, FM_Housing_Test_recent$`Price Diff`)[2]
   
-  print(paste(k,i))
+  print(i)
 }
-rvals[k] <- mean(resamples)
-rvals_recent[k] <- mean(resamples_recent)
-}
+summary(trainingModel)
+paste("Full range: ", mean(resamples), " (", sd(resamples), ")", sep="")
+paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", sep="")
 
-ggplot(data.frame(coefficients, rvals, rvals_recent)) + geom_line(mapping=aes(x=coefficients, y=rvals), color="red") + geom_line(mapping=aes(x=coefficients, y=rvals_recent), color="blue")
+ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
 ```
