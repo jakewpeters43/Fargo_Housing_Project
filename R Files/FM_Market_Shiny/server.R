@@ -6,15 +6,11 @@
 #
 #    http://shiny.rstudio.com/
 #
-library(rsconnect)
 library(leaflet)
-library(sf)
 library(shiny)
-library(htmltools)
+library(scales)
 library(tidyverse)
 # Define server logic required to plot house types
-
-FM_Market_Clean <- read_csv("../../Data/FM_Market_Clean.csv")
 
 shinyServer(function(input, output) {
   selected <- reactive({
@@ -33,14 +29,19 @@ shinyServer(function(input, output) {
 
   observe({
     leafletProxy("map", data=FM_Market_Clean) %>% clearMarkers() %>% addCircleMarkers(
-      data=st_as_sf(selected(), coords=c("Geo Lon", "Geo Lat")),
+      lng=selected()$`Geo Lon`, 
+      lat=selected()$`Geo Lat`,
       radius=1,
       label=lapply(paste0(
-        "<div style=text-align:center><img src=",selected()$`Photo URL`,"><br>",
-        "List Price: $",selected()$`List Price`,"<br>",
-        selected()$`Book Section`,"<br>",
-        "Our Estimate: $",round(selected()$`Listing Adjustment Prediction`,-2),"<br>",
-        selected()$`Total SqFt.`," sq. ft. / ",selected()$`Total Bedrooms`," Bed / ",selected()$`Total Bathrooms`," Bath</div>"),HTML)
+        "<img src=",selected()$`Photo URL`,"><br>",
+        "List Price: <b>$",comma(selected()$`List Price`, 100),"</b><br>",
+        "Our Estimate: <b>$",comma(selected()$`Adjustment Prediction`, 100),"</b><br>",
+        selected()$`Book Section`," - ",selected()$`Style`,"<br>",
+        selected()$`Total SqFt.`," sq. ft. / ",selected()$`Total Bedrooms`," Bed / ",selected()$`Total Bathrooms`," Bath"),HTML),
+      labelOptions=labelOptions(style=list(
+        "text-align"="center",
+        "font-size"="15px"
+      ))
     )
   })
 })

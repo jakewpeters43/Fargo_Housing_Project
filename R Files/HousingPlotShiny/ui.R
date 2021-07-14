@@ -10,7 +10,6 @@
 
 # rsconnect::deployApp('C:\\Users\\13204\\Documents\\GitHub\\FM-Housing\\R Files\\HousingPlotShiny')
 library(leaflet)
-library(rsconnect)
 library(shiny)
 library(plotly)
 library(shinyWidgets)
@@ -92,23 +91,7 @@ tabPanel("Similar Houses",
         
         leafletOutput("map2")
     )     
-),
-tabPanel("Word Cloud",
-         fluidPage(sidebarLayout(position = "right",
-                                 sidebarPanel(style = "background: black",
-                                 wellPanel(style = "background: white",
-                                           checkboxGroupInput("remarks",
-                                                              "Select your Remarks(s):",
-                                                              choices = 1:2,
-                                                              selected = 1:2)),
-                                 DT::dataTableOutput("counttable")), mainPanel( 
-                                     p(strong(em("\"...It's full of flowers and heart-shaped boxes, and things we're all too young to know.\""), "1.12 - The Book of Love")),
-                                     p("Unsurprisingly there's a lot of love, but what else? Hover over the word cloud below, or search for words in the table to the right:"),
-                                     wordcloud2Output("wordcloud", width = "100%", height = "565px")
-                                 )
-         )
 )
-    )
 
 )
 )

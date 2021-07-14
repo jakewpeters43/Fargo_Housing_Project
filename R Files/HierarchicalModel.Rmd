@@ -84,36 +84,6 @@ paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", se
 ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```{r}
 coefficients <- seq(-0.004, -0.001, 0.0001)
 rvals <- vector(length=n)

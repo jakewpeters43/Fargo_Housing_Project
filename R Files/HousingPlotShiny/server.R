@@ -14,8 +14,6 @@ library(sp)
 library(leaflet)
 library(shiny)
 library(htmltools)
-library(DT)
-library(wordcloud2)
 # Define server logic required to plot house types
 shinyServer(function(input, output) {
   
@@ -72,29 +70,6 @@ observe({
                       labelOptions = labelOptions(style=list("text-align" ="center"))
                       
     )
-})
-# word counts (excluding stop words) for word clouds
-word_counts <- reactive({ 
-  req(input$disc)
-  FM_Housing_Clean %>% 
-    filter(disc_number %in% input$disc_cloud) %>%
-    select(word) %>% 
-    anti_join(stop_words, by = "word") %>%
-    #filter(word != "love") %>% 
-    count(word, sort = TRUE) 
-}) 
-
-# Word Clouds
-output$wordcloud <- renderWordcloud2({
-  wordcloud2(word_counts(), size = 1.6, fontFamily = "Courier",
-             color=rep_len(pal[2:4], nrow(word_counts())), backgroundColor = "black")
-})
-
-# Word search table
-output$counttable = DT::renderDataTable({
-  DT::datatable(word_counts(), options = list(lengthMenu = c(10, 20, 50), pageLength = 10),
-                rownames = FALSE, colnames = c("Word", "Count"), class = 'compact',
-                caption = 'Common words (e.g. the, is, at) are excluded')
 })
 
 
