@@ -1,14 +1,3 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
-
-# rsconnect::deployApp('C:\\Users\\13204\\Documents\\GitHub\\FM-Housing\\R Files\\HousingPlotShiny')
 library(leaflet)
 library(shiny)
 library(shinyWidgets)
@@ -16,42 +5,67 @@ library(shinyWidgets)
 
 # Define UI for application 
 shinyUI(
-    navbarPage(inverse = TRUE, "FM_Housing",
-               
-tabPanel("Similar Houses",
-    fluidPage(
-        titlePanel("Similar Houses"),
+    navbarPage(
+        inverse = TRUE,
+        "Fargo-Moorhead Housing",
+        tabPanel(
+            "House Finder",
+            fluidPage(
+                pickerInput(
+                    inputId = "city",
+                    label = "City:", 
+                    choices = unique(na.omit(FM_Market_Clean$`City`)),
+                    selected = unique(na.omit(FM_Market_Clean$`City`)),
+                    options = list(`actions-box` = TRUE), 
+                    multiple = TRUE
+                ),
+                
+                sliderInput(
+                    inputId = "list_price",
+                    label = "Price Range:",
+                    min = 100000,
+                    max = 1500000,
+                    value = c(100000, 1500000),
+                    pre="$",
+                    sep=","
+                ),
+                
+                pickerInput(
+                    inputId = "book_section",
+                    label = "House Type:", 
+                    choices = unique(FM_Market_Clean$`Book Section`),
+                    selected = unique(FM_Market_Clean$`Book Section`),
+                    options = list(`actions-box` = TRUE), 
+                    multiple = TRUE
+                ),
+                
+                sliderInput(
+                    inputId = "sq_ft",
+                    label = "Square Footage:",
+                    min = 750,
+                    max = 5000,
+                    value = c(750, 5000),
+                    sep=","
+                ),
+                
+                sliderInput(
+                    inputId = "bedrooms",
+                    label = "Bedrooms:", 
+                    min = 0,
+                    max = 10,
+                    value = c(0,10)
+                ),
+                
+                sliderInput(
+                    inputId = "bathrooms",
+                    label = "Bathrooms:",
+                    min = 0,
+                    max = 10,
+                    value = c(0,10),
+                    step = 0.5
+                ),
 
-        pickerInput(
-            inputId = "city",
-            label = "Choose City: ", 
-            choices = unique(na.omit(FM_Market_Clean$`City`)),
-            selected = unique(na.omit(FM_Market_Clean$`City`)),
-            options = list(
-                `actions-box` = TRUE), 
-                multiple = TRUE
-            ),
-        
-        pickerInput(
-            inputId = "bedbuttonsimilar",
-            label = "Choose Number of Bedrooms: ", 
-            choices = sort(unique(na.omit(FM_Market_Clean$`Total Bedrooms`)),decreasing=FALSE),
-            selected = sort(unique(na.omit(FM_Market_Clean$`Total Bedrooms`)),decreasing=FALSE),
-            options = list(
-                `actions-box` = TRUE), 
-            multiple = TRUE
-        ),
-        
-        pickerInput(
-            inputId = "book_section",
-            label = "Choose House Type: ", 
-            choices = unique(FM_Market_Clean$`Book Section`),
-            selected = unique(FM_Market_Clean$`Book Section`),
-            options = list(
-                `actions-box` = TRUE), 
-            multiple = TRUE
-        ),
-        leafletOutput("map")
+                leafletOutput("map")
             )     
         )
     )

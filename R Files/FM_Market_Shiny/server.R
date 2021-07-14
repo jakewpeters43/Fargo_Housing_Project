@@ -14,14 +14,31 @@ library(tidyverse)
 
 shinyServer(function(input, output) {
   selected <- reactive({
-    input$bedbuttonsimilar
-    input$book_section
     input$city
-  
-    FM_Market_Clean %>% filter(`Total Bedrooms` %in% input$bedbuttonsimilar) %>%
+    input$list_price
+    input$book_section
+    input$sq_ft
+    input$bathrooms
+    input$bedrooms
+    #input$year_built
+    
+    similar_df <- FM_Market_Clean %>%
+      filter(`City` %in% input$city) %>%
+      
+      filter(if(input$list_price[[1]]>100000) `List Price`>=input$list_price[[1]] else TRUE) %>%
+      filter(if(input$list_price[[2]]<1500000) `List Price`<=input$list_price[[2]] else TRUE) %>%
+      
       filter(`Book Section` %in% input$book_section) %>%
-      filter(`City` %in% input$city)
-  }) 
+      
+      filter(if(input$bedrooms[[1]]>0) `Total Bedrooms`>=input$bedrooms[[1]] else TRUE) %>%
+      filter(if(input$bedrooms[[2]]<10) `Total Bedrooms`<=input$bedrooms[[2]] else TRUE) %>%
+      
+      filter(if(input$bathrooms[[1]]>0) `Total Bathrooms`>=input$bathrooms[[1]] else TRUE) %>%
+      filter(if(input$bathrooms[[2]]<10) `Total Bathrooms`<=input$bathrooms[[2]] else TRUE) %>%
+      
+      filter(if(input$sq_ft[[1]]>750) `Total SqFt.`>=input$sq_ft[[1]] else TRUE) %>%
+      filter(if(input$sq_ft[[2]]<5000) `Total SqFt.`<=input$sq_ft[[2]] else TRUE) 
+  })
 
   output$map <- renderLeaflet({
     map1 <- leaflet(FM_Market_Clean, options=leafletOptions(preferCanvas=TRUE)) %>% addTiles() %>% fitBounds(~min(`Geo Lon`), ~min(`Geo Lat`), ~max(`Geo Lon`), ~max(`Geo Lat`))
