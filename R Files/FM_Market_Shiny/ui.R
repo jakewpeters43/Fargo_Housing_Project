@@ -2,8 +2,6 @@ library(leaflet)
 library(shiny)
 library(shinyWidgets)
 
-
-# Define UI for application 
 shinyUI(
     navbarPage(
         inverse = TRUE,
@@ -20,16 +18,6 @@ shinyUI(
                     multiple = TRUE
                 ),
                 
-                sliderInput(
-                    inputId = "list_price",
-                    label = "Price Range:",
-                    min = 100000,
-                    max = 1500000,
-                    value = c(100000, 1500000),
-                    pre="$",
-                    sep=","
-                ),
-                
                 pickerInput(
                     inputId = "book_section",
                     label = "House Type:", 
@@ -39,29 +27,50 @@ shinyUI(
                     multiple = TRUE
                 ),
                 
+                pickerInput(
+                    inputId = "style",
+                    label = "House style:",
+                    choices = c("1 Story", "1 1/2 Story"="1&frac12 Story", "2 Story", "3 Story", "Bi Level", "3 Level", "4 Level"),
+                    selected = unique(FM_Market_Clean$`Style`),
+                    options = list(`actions-box` = TRUE),
+                    multiple = TRUE
+                ),
+                
+                sliderInput(
+                    inputId = "list_price",
+                    label = "Price Range:",
+                    min = 100000,
+                    max = 1600000,
+                    value = c(100000, 1600000),
+                    pre="$",
+                    sep=",",
+                    step=5000,
+                ),
+                
                 sliderInput(
                     inputId = "sq_ft",
                     label = "Square Footage:",
-                    min = 750,
-                    max = 5000,
-                    value = c(750, 5000),
-                    sep=","
+                    min = 1000,
+                    max = 6000,
+                    value = c(1000, 6000),
+                    sep=",",
+                    step=50
                 ),
                 
                 sliderInput(
                     inputId = "bedrooms",
                     label = "Bedrooms:", 
-                    min = 0,
-                    max = 10,
-                    value = c(0,10)
+                    min = 1,
+                    max = 8,
+                    value = c(1,8)
                 ),
                 
                 sliderInput(
                     inputId = "bathrooms",
                     label = "Bathrooms:",
-                    min = 0,
-                    max = 10,
-                    value = c(0,10),
+                    min = 1,
+                    max = 8,
+                    value = c(1,8),
                     step = 0.5
                 ),
 

@@ -1,47 +1,46 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
 library(leaflet)
 library(shiny)
 library(scales)
 library(tidyverse)
-# Define server logic required to plot house types
+library(raster)
 
 shinyServer(function(input, output) {
   selected <- reactive({
     input$city
-    input$list_price
     input$book_section
+    input$style
+    input$list_price
     input$sq_ft
     input$bathrooms
     input$bedrooms
-    #input$year_built
     
     similar_df <- FM_Market_Clean %>%
       filter(`City` %in% input$city) %>%
+      filter(`Book Section` %in% input$book_section) %>%
+      filter(`Style` %in% input$style) %>%
       
       filter(if(input$list_price[[1]]>100000) `List Price`>=input$list_price[[1]] else TRUE) %>%
-      filter(if(input$list_price[[2]]<1500000) `List Price`<=input$list_price[[2]] else TRUE) %>%
+      filter(if(input$list_price[[2]]<1600000) `List Price`<=input$list_price[[2]] else TRUE) %>%
       
-      filter(`Book Section` %in% input$book_section) %>%
+      filter(if(input$bedrooms[[1]]>1) `Total Bedrooms`>=input$bedrooms[[1]] else TRUE) %>%
+      filter(if(input$bedrooms[[2]]<8) `Total Bedrooms`<=input$bedrooms[[2]] else TRUE) %>%
       
-      filter(if(input$bedrooms[[1]]>0) `Total Bedrooms`>=input$bedrooms[[1]] else TRUE) %>%
-      filter(if(input$bedrooms[[2]]<10) `Total Bedrooms`<=input$bedrooms[[2]] else TRUE) %>%
+      filter(if(input$bathrooms[[1]]>1) `Total Bathrooms`>=input$bathrooms[[1]] else TRUE) %>%
+      filter(if(input$bathrooms[[2]]<8) `Total Bathrooms`<=input$bathrooms[[2]] else TRUE) %>%
       
-      filter(if(input$bathrooms[[1]]>0) `Total Bathrooms`>=input$bathrooms[[1]] else TRUE) %>%
-      filter(if(input$bathrooms[[2]]<10) `Total Bathrooms`<=input$bathrooms[[2]] else TRUE) %>%
-      
-      filter(if(input$sq_ft[[1]]>750) `Total SqFt.`>=input$sq_ft[[1]] else TRUE) %>%
-      filter(if(input$sq_ft[[2]]<5000) `Total SqFt.`<=input$sq_ft[[2]] else TRUE) 
+      filter(if(input$sq_ft[[1]]>1000) `Total SqFt.`>=input$sq_ft[[1]] else TRUE) %>%
+      filter(if(input$sq_ft[[2]]<6000) `Total SqFt.`<=input$sq_ft[[2]] else TRUE) 
   })
 
   output$map <- renderLeaflet({
-    map1 <- leaflet(FM_Market_Clean, options=leafletOptions(preferCanvas=TRUE)) %>% addTiles() %>% fitBounds(~min(`Geo Lon`), ~min(`Geo Lat`), ~max(`Geo Lon`), ~max(`Geo Lat`))
+    map1 <- leaflet(data=FM_Market_Clean, options=leafletOptions(preferCanvas=TRUE)) %>%
+      addTiles() %>%
+      fitBounds(minlon, minlat, maxlon, maxlat) %>%
+      addEasyButton(easyButton(
+        icon = "fa-crosshairs",
+        title="Reset zoom",
+        onClick = JS(paste0("function(btn, map){ map.fitBounds([[",minlat,",",minlon,"],[",maxlat,",",maxlon,"]]);}"))
+      ))
   })
 
   observe({
