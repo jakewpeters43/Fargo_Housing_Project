@@ -2,6 +2,7 @@ library(tidyverse)
 library(lme4)
 library(caret)
 library(lubridate)
+library(shinyjs)
  FM_Market_Clean <- read_csv("FM_Market_Clean.csv")
  
  FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`Adjustment Prediction` <- FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`List Price`
@@ -33,44 +34,32 @@ hedonicModel <- lmer(`Log Price`~
                        #`Log List Price`+
                        `Log SqFt`+
                        
-                       # `Year Built`+
+                        `Year Built`+
                        # `Building Age`+
                         `Total Bedrooms`+
                         `Total Bathrooms`+
-                       # `Garage Stalls`+
-                       # `Has Air Conditioning`+
-                       # `New Construction`+
-                       # `Style Group`+
-                       # `Roof Group`+
-                       # `Water Heater Group`+
-                       # `Kitchen Island`+
-                       # `Patio`+
-                       # `Has Deck`+
-                       # `Has Fence`+
-                       # `Sprinkler System`+
-                       # `Gazebo`+
-                       # `Pool`+
-                       # `Pantry`+
-                       # `Walk-in Closet`+
-                       # `Private Bath`+
-                       # `Spa/Hot Tub`+
-                       # `Foundation Group`+
-                       # `Book Section Group`+
-                       # `Exterior`+
+                        `Garage Stalls`+
+                        `Has Air Conditioning`+
+                        `New Construction`+
+                        `Style`+
+                        `Roof`+
+                        `Water Heater`+
+                        `Kitchen Island`+
+                        `Patio`+
+                        `Has Deck`+
+                        `Has Fence`+
+                        `Sprinkler System`+
+                        `Gazebo`+
+                        `Pool`+
+                        `Pantry`+
+                        `Walk-in Closet`+
+                        `Private Bath`+
+                        `Spa/Hot Tub`+
+                        `Foundation`+
+                        `Book Section`+
+                        `Exterior`+
                        (1+`Log SqFt`|`City`), data=FM_Housing_Clean, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
 
 #New_Data_Clean$`Hedonic Prediction` <- exp(predict(hedonicModel, newdata=New_Data_Clean, allow.new.levels=TRUE))
 
-fieldsAll <- c("sq_ft1", "city1", "bathrooms1", "bedrooms1")
-fieldsMandatory <- c("sq_ft", "city1")
-
-labelMandatory <- function(label) {
-  tagList(
-    label,
-    span("*", class = "mandatory_star")
-  )
-}
-
-appCSS <-
-  ".mandatory_star { color: red; }"
 

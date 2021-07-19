@@ -10,6 +10,7 @@ library(leaflet)
 library(shiny)
 library(scales)
 library(tidyverse)
+library(shinyBS)
 # Define server logic required to plot house types
 
 shinyServer(function(input, output) {
@@ -79,27 +80,48 @@ shinyServer(function(input, output) {
     input$sq_ft1
     input$bathrooms1
     input$bedrooms1
-
-   # data <- sapply(fieldsAll, function(x) input[[x]])
-    # data <- c(input$city, input$sq_ft)
-    # data
-    data <- c(input$city1, log(as.numeric(input$sqft1)), input$bedrooms1, input$bathrooms1)
-    df <- data.frame(matrix(unlist(data), nrow=1, byrow=TRUE),stringsAsFactors=FALSE)
-    df <- rename(df, "City" = "X1", "Log SqFt" = "X2", "Total Bedrooms" = "X3", "Total Bathrooms" = "X4")
-    df
+    input$yearbuilt1
+   
     
+    newdata <- FM_Housing_Clean %>% filter(FALSE) 
+    newdata[1,] <- NA
+    data_na <- newdata[1,] 
+    
+    
+    data_na$`City` <- input$city1
+    data_na$`Log SqFt`<- log(input$sq_ft1)
+    data_na$`Total Bedrooms` <- input$bedrooms1
+    data_na$`Total Bathrooms` <- input$bathrooms1
+    data_na$`Year Built` <- input$yearbuilt1
+    data_na$`Garage Stalls` <- input$garagestalls1
+    data_na$`Has Air Conditioning` <- input$AC1
+    data_na$`New Construction` <- input$newconstruction1
+    data_na$`Kitchen Island` <- input$kitchenisland1
+    data_na$`Patio` <- input$patio1
+    data_na$`Has Deck` <- input$deck1
+    data_na$`Has Fence` <- input$fence1
+    data_na$`Sprinkler System` <- input$sprinklersystem1
+    data_na$`Gazebo` <- input$gazebo1
+    data_na$`Pool` <- input$pool1
+    data_na$`Pantry` <- input$pantry1
+    data_na$`Walk-in Closet` <- input$walkincloset1
+    data_na$`Private Bath` <- input$privatebath1
+    data_na$`Spa/Hot Tub` <- input$spahottub1
+    data_na$`Style` <- input$style1
+    data_na$`Roof` <- input$roof1
+    data_na$`Water Heater` <- input$waterheater1
+    data_na$`Foundation` <- input$foundation1
+    data_na$`Book Section` <- input$booksection1
+    data_na$`Exterior` <- input$exterior1
+    data_na
   })
-  # output$newdataframe <- renderPrint({
-  #   input$submit
-  #   
-  #   exp(predict(hedonicModel, newdata=df, allow.new.levels=TRUE))
-  # 
-  # })
- result <- observeEvent(input$submit,{
-    #exp(predict(hedonicModel, newdata=formData(), allow.new.levels=TRUE))
-   View(formData())
-    #formData$`Hedonic Prediction` <- exp(predict(hedonicModel, newdata=formData(), allow.new.levels=TRUE))
+
+ output$result <- eventReactive(input$submit,{
+    
+   toString(exp(predict(hedonicModel, newdata=formData(), allow.new.levels=TRUE)))
+   
 
   })
+ 
   
 })
