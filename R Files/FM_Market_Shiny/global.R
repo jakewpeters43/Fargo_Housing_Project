@@ -36,41 +36,5 @@ FM_Market_Clean[FM_Market_Clean$`Style`=="1 1/2 Stor",]$`Style` <- "1&frac12 Sto
 
 #========================================================================================
 
-FM_Housing_Clean <- read_csv("FM_Housing_Clean.csv.gz", col_types = cols(
-	`Lease Term` = col_character(),
-	`Water Frontage Length` = col_integer(),
-	`Postal Code` = col_character(),
-	`Address #` = col_character(),
-	`Occupant Phone 2` = col_character(),
-	`Finance` = col_character(),
-	`Sheyenne Unpd` = col_character()
-))
-
-FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=exp(-0.002*`Days Since Listing`))
-
-hedonicModel <- lmer(`Log Price`~
-					 	`Log SqFt`+
-					 	`Year Built`+
-					 	`Total Bedrooms`+
-					 	`Total Bathrooms`+
-					 	`Garage Stalls`+
-					 	`Has Air Conditioning`+
-					 	`New Construction`+
-					 	`Style`+
-					 	`Roof`+
-					 	`Water Heater`+
-					 	`Kitchen Island`+
-					 	`Patio`+
-					 	`Has Deck`+
-					 	`Has Fence`+
-					 	`Sprinkler System`+
-					 	`Gazebo`+
-					 	`Pool`+
-					 	`Pantry`+
-					 	`Walk-in Closet`+
-					 	`Private Bath`+
-					 	`Spa/Hot Tub`+
-					 	`Foundation`+
-					 	`Book Section`+
-					 	`Exterior`+
-					 	(1+`Log SqFt`|`City`), data=FM_Housing_Clean, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
+load("hedonicModel.RData")
+Predicted_DF <- read_csv("Predicted_DF.csv")

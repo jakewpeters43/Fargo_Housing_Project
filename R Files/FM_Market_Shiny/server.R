@@ -197,51 +197,33 @@ shinyServer(function(input, output, session) {
     ))
   })
   
-  formData <- reactive({
-    input$city1
-    input$sq_ft1
-    input$bathrooms1
-    input$bedrooms1
-    input$yearbuilt1
-    
-    
-    newdata <- FM_Housing_Clean %>% filter(FALSE) 
-    newdata[1,] <- NA
-    data_na <- newdata[1,] 
-    
-    
-    data_na$`City` <- input$city1
-    data_na$`Log SqFt`<- log(input$sq_ft1)
-    data_na$`Total Bedrooms` <- input$bedrooms1
-    data_na$`Total Bathrooms` <- input$bathrooms1
-    data_na$`Year Built` <- input$yearbuilt1
-    data_na$`Garage Stalls` <- input$garagestalls1
-    data_na$`Has Air Conditioning` <- input$AC1
-    data_na$`New Construction` <- input$newconstruction1
-    data_na$`Kitchen Island` <- input$kitchenisland1
-    data_na$`Patio` <- input$patio1
-    data_na$`Has Deck` <- input$deck1
-    data_na$`Has Fence` <- input$fence1
-    data_na$`Sprinkler System` <- input$sprinklersystem1
-    data_na$`Gazebo` <- input$gazebo1
-    data_na$`Pool` <- input$pool1
-    data_na$`Pantry` <- input$pantry1
-    data_na$`Walk-in Closet` <- input$walkincloset1
-    data_na$`Private Bath` <- input$privatebath1
-    data_na$`Spa/Hot Tub` <- input$spahottub1
-    data_na$`Style` <- input$style1
-    data_na$`Roof` <- input$roof1
-    data_na$`Water Heater` <- input$waterheater1
-    data_na$`Foundation` <- input$foundation1
-    data_na$`Book Section` <- input$booksection1
-    data_na$`Exterior` <- input$exterior1
-    data_na
-  })
-  
   output$result <- eventReactive(input$submit,{
+    Predicted_DF$`City` <- input$city1
+    Predicted_DF$`Log SqFt`<- log(input$sq_ft1)
+    Predicted_DF$`Total Bedrooms` <- input$bedrooms1
+    Predicted_DF$`Total Bathrooms` <- input$bathrooms1
+    Predicted_DF$`Year Built` <- input$yearbuilt1
+    Predicted_DF$`Garage Stalls` <- input$garagestalls1
+    Predicted_DF$`Has Air Conditioning` <- input$AC1
+    Predicted_DF$`New Construction` <- input$newconstruction1
+    Predicted_DF$`Kitchen Island` <- input$kitchenisland1
+    Predicted_DF$`Patio` <- input$patio1
+    Predicted_DF$`Has Deck` <- input$deck1
+    Predicted_DF$`Has Fence` <- input$fence1
+    Predicted_DF$`Sprinkler System` <- input$sprinklersystem1
+    Predicted_DF$`Gazebo` <- input$gazebo1
+    Predicted_DF$`Pool` <- input$pool1
+    Predicted_DF$`Pantry` <- input$pantry1
+    Predicted_DF$`Walk-in Closet` <- input$walkincloset1
+    Predicted_DF$`Private Bath` <- input$privatebath1
+    Predicted_DF$`Spa/Hot Tub` <- input$spahottub1
+    Predicted_DF$`Style` <- input$style1
+    Predicted_DF$`Roof` <- input$roof1
+    Predicted_DF$`Water Heater` <- input$waterheater1
+    Predicted_DF$`Foundation` <- input$foundation1
+    Predicted_DF$`Book Section` <- input$booksection1
+    Predicted_DF$`Exterior` <- input$exterior1
     
-    toString(exp(predict(hedonicModel, newdata=formData(), allow.new.levels=TRUE)))
-    
-    
+    toString(exp(predict(hedonicModel, newdata=Predicted_DF, allow.new.levels=TRUE)))
   })
 })

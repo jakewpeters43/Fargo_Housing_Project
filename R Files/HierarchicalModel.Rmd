@@ -47,7 +47,6 @@ for(i in 1:n) {
   trainingModel <- lmer(`Log Price`~
                         `Log SqFt`+
                         `Year Built`+
-                        `Building Age`+
                         `Total Bedrooms`+
                         `Total Bathrooms`+
                         `Garage Stalls`+
@@ -70,7 +69,7 @@ for(i in 1:n) {
                         `Foundation`+
                         `Book Section`+
                         `Exterior`+
-                        (1+`Log SqFt`|`Census Tract`), data=FM_Housing_Train, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
+                        (1+`Log SqFt`|`City`), data=FM_Housing_Train, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
                       
   testedModel <- predict(trainingModel, newdata=FM_Housing_Test, allow.new.levels=TRUE)
   testedModel_recent <- predict(trainingModel, newdata=FM_Housing_Test_recent, allow.new.levels=TRUE)
@@ -146,5 +145,5 @@ ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0
 ```
 
 ```{r}
-save(hedonicModel, path.expand("~/FM_Market_Shiny/hedonicModel.Rdata"))
+save(hedonicModel, file="FM_Market_Shiny/hedonicModel.RData")
 ```
