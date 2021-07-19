@@ -1,6 +1,11 @@
+library(leaflet)
+library(shiny)
+library(shinyWidgets)
+library(scales)
 library(tidyverse)
 
 FM_Market_Clean <- read_csv("FM_Market_Clean.csv")
+
 
 FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`Adjustment Prediction` <- FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`List Price`
 
@@ -21,7 +26,7 @@ max_bedrooms <- 8
 min_bathrooms <- 1
 max_bathrooms <- 8
 
-min_yearbuilt <- 1900
+min_yearbuilt <- 1901
 max_yearbuilt <- 2021
 
 FM_Market_Clean[FM_Market_Clean$`Book Section`=="Twinhomes",]$`Book Section`<-"Twinhome"
