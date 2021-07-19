@@ -27,13 +27,15 @@ FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv.gz", col_types = cols
 ```{r}
 #TEST PROCESSING
 #Anything finalized should be put in DataProcessing.Rmd
+
+FM_Housing_Clean[FM_Housing_Clean$`Roof`=="Slate",]$`Roof` <- NA
 ```
 
 
 ```{r}
 FM_Housing_Clean <- FM_Housing_Clean %>% mutate("Model Weight"=exp(-0.002*`Days Since Listing`))
 
-n <- 5
+n <- 2
 resamples <- vector(length=n)
 resamples_recent <- vector(length=n)
 trainIndex <- createFolds(FM_Housing_Clean$`Log Price`, k=n, list=TRUE, returnTrain=TRUE)
@@ -51,9 +53,9 @@ for(i in 1:n) {
                         `Garage Stalls`+
                         `Has Air Conditioning`+
                         `New Construction`+
-                        `Style Group`+
-                        `Roof Group`+
-                        `Water Heater Group`+
+                        `Style`+
+                        `Roof`+
+                        `Water Heater`+
                         `Kitchen Island`+
                         `Patio`+
                         `Has Deck`+
@@ -65,8 +67,8 @@ for(i in 1:n) {
                         `Walk-in Closet`+
                         `Private Bath`+
                         `Spa/Hot Tub`+
-                        `Foundation Group`+
-                        `Book Section Group`+
+                        `Foundation`+
+                        `Book Section`+
                         `Exterior`+
                         (1+`Log SqFt`|`Census Tract`), data=FM_Housing_Train, weights=`Model Weight`, REML=FALSE, control=lmerControl(calc.derivs=FALSE))
                       
@@ -82,6 +84,8 @@ paste("Full range: ", mean(resamples), " (", sd(resamples), ")", sep="")
 paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", sep="")
 
 ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
+
+hedonicModel <- trainingModel
 ```
 
 ```{r}
@@ -139,4 +143,8 @@ paste("Full range: ", mean(resamples), " (", sd(resamples), ")", sep="")
 paste("2021 only: ", mean(resamples_recent), " (", sd(resamples_recent), ")", sep="")
 
 ggplot() + geom_point(aes(predict(trainingModel), resid(trainingModel)), alpha=0.1) + geom_hline(yintercept=0, color="blue")
+```
+
+```{r}
+save(hedonicModel, path.expand("~/FM_Market_Shiny/hedonicModel.Rdata"))
 ```

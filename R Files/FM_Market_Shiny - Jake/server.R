@@ -10,7 +10,6 @@ library(leaflet)
 library(shiny)
 library(scales)
 library(tidyverse)
-library(shinyBS)
 # Define server logic required to plot house types
 
 shinyServer(function(input, output) {
@@ -64,17 +63,7 @@ shinyServer(function(input, output) {
   # })
   
 
-  observe({
-    mandatoryFilled <-
-      vapply(fieldsMandatory,
-             function(x) {
-               !is.null(input[[x]]) && input[[x]] != ""
-             },
-             logical(1))
-    mandatoryFilled <- all(mandatoryFilled)
-    
-    shinyjs::toggleState(id = "submit", condition = mandatoryFilled)
-  })
+  
   formData <- reactive({
     input$city1
     input$sq_ft1
