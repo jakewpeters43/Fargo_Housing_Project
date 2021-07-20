@@ -5,10 +5,15 @@ library(scales)
 library(tidyverse)
 library(lme4)
 
+# dataset for our housing data we use for the Fargo-Moorhead area
+
 FM_Market_Clean <- read_csv("FM_Market_Clean.csv")
 
+# the adjustment prediction is predicting change from list price for our model including list price
 
 FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`Adjustment Prediction` <- FM_Market_Clean[is.na(FM_Market_Clean$`Adjustment Prediction`),]$`List Price`
+
+# variables for minimium and maximum house latitude and longitude
 
 min_lon <- min(FM_Market_Clean$`Geo Lon`)
 min_lat <- min(FM_Market_Clean$`Geo Lat`)
@@ -35,6 +40,9 @@ max_yearbuilt <- 2021
 
 
 #========================================================================================
+
+# loading in our hedonic model (without list price) and prediction we 
+# use to predict sold price in our predictor panel
 
 load("hedonicModel.RData")
 Predicted_DF <- read_csv("Predicted_DF.csv")

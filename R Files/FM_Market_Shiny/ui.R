@@ -1,7 +1,9 @@
+# the user interface side of our app
 shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.css",
     navbarPage(
         inverse = TRUE,
         "Fargo-Moorhead Housing",
+# the page with our FM housing map display
         tabPanel(
             "House Finder",
             fillPage(
@@ -95,7 +97,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                                 width="95%"
                             )
                         ),
-                        
+                        # buttons with collapsable features
                         HTML('<br><a data-toggle="collapse" href="#construction" 
                              aria-expanded="false" aria-controls="construction">
                                  Construction info
@@ -147,7 +149,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                                 
                         width=3
                     ),
-                    
+                    # map display
                     mainPanel(
                         leafletOutput("map"),
                         tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),
@@ -155,7 +157,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                     )
                 )
             ),
-            
+            # reset filters button
             fixedPanel(
                 actionButton(
                     inputId = "reset",
@@ -169,7 +171,9 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
         ),
         
 #====================================================================================================    
-    
+# panel with our hedonic price predictor model
+# users can pick what they want in a house and our model will output our price prediction
+# no list price included, so we go off of features only, with no money involved
         tabPanel("Price Predictor",
             fillPage(
                 titlePanel(h1("Price Predictor", align="center")),
@@ -177,7 +181,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                 fluidRow(column(
                     align="center",
                     width=12,
-                    style="overflow-y:scroll; max-height:70vh;",
+                    style="overflow-y:scroll; max-height:calc(90vh - 200px);",
                             
                         pickerInput(
                             inputId = "city1",
@@ -406,13 +410,16 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                         multiple = FALSE
                     )
                 )),
-                
+# button that submits based on user input and outputs our price prediction for the house
                 fluidRow(
                     column(width=4),
                     column(
                         width=4,
                         align="center",
-                        actionButton("submit", "Submit", class = "btn-primary"),
+                        div(
+                            style = "padding-top:10px; padding-bottom:10px;",
+                            actionButton("submit", "Submit", class = "btn-primary")
+                        ),
                         verbatimTextOutput("result")
                     )
                 )

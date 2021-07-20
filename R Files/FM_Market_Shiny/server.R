@@ -1,4 +1,9 @@
+# server side of our model
+
 shinyServer(function(input, output, session) {
+  
+# building our input function that we pass our filters into for our map
+# it is a reactive function that changes filtering based on user input
   
   selected <- reactive({
     input$city
@@ -37,12 +42,14 @@ shinyServer(function(input, output, session) {
       filter(if(input$year_built[[1]]>min_yearbuilt) `Year Built`>=input$year_built[[1]] else TRUE) %>%
       filter(if(input$year_built[[2]]<max_yearbuilt) `Year Built`<=input$year_built[[2]] else TRUE)
   })
-
+# the background map that is static so we do not have to build a new map everytime the app is run
+  
   output$map <- renderLeaflet({
     map1 <- leaflet(data=FM_Market_Clean, options=leafletOptions(preferCanvas=TRUE)) %>%
       addTiles() %>%
       fitBounds(min_lon, min_lat, max_lon, max_lat) %>%
       addEasyButton(easyButton(
+        # button that recenters the map
         icon = "fa-crosshairs",
         title="Recenter map",
         onClick = JS(
@@ -51,6 +58,7 @@ shinyServer(function(input, output, session) {
       ))
   })
 
+# the function that builds the points and popup feature for each house on the leaflet map
   observe({
     leafletProxy("map", data=FM_Market_Clean) %>% clearMarkers() %>% clearControls() %>% addCircleMarkers(
       lng=selected()$`Geo Lon`, 
@@ -76,7 +84,7 @@ shinyServer(function(input, output, session) {
         "Average price: <b>",dollar(mean(selected()$`List Price`), 100),"</b></div>")),
         position = "bottomleft")
   })
-  
+# the reset button that sets all filters back to the beginning
   observeEvent(input$reset, {
     updatePickerInput(
       session = session,
@@ -182,7 +190,7 @@ shinyServer(function(input, output, session) {
     )
     leafletProxy("map", data=FM_Market_Clean) %>% fitBounds(min_lon, min_lat, max_lon, max_lat)
   })
-  
+# the display that shows our prediction for the sold price based on our model that includes list price
   observeEvent(input$map_marker_click, {
     clicked <- selected()[selected()$`Index`==input$map_marker_click$id,]
     showModal(modalDialog(
@@ -197,7 +205,7 @@ shinyServer(function(input, output, session) {
       footer=modalButton("Close")
     ))
   })
-  
+# the calculator for our hedonic model, using user input
   output$result <- eventReactive(input$submit,{
     Predicted_DF$`City` <- input$city1
     Predicted_DF$`Log SqFt`<- log(input$sq_ft1)
