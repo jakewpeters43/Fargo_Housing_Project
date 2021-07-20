@@ -100,7 +100,8 @@ shinyServer(function(input, output, session) {
       session = session,
       inputId = "style",
       label = "House style:",
-      choices = c("1 Story", "1 1/2 Story"="1&frac12 Story", "2 Story", "3 Story", "Bi Level", "3 Level", "4 Level"),
+      #choices = c("1 Story", "1 1/2 Story"="1&frac12 Story", "2 Story", "3 Story", "Bi Level", "3 Level", "4 Level"),
+      choices = unique(FM_Market_Clean$`Style`),
       selected = unique(FM_Market_Clean$`Style`),
       options = list(`actions-box` = TRUE)
     )
@@ -224,6 +225,6 @@ shinyServer(function(input, output, session) {
     Predicted_DF$`Book Section` <- input$booksection1
     Predicted_DF$`Exterior` <- input$exterior1
     
-    toString(exp(predict(hedonicModel, newdata=Predicted_DF, allow.new.levels=TRUE)))
+    toString(dollar(exp(predict(hedonicModel, newdata=Predicted_DF, allow.new.levels=TRUE)), 100))
   })
 })

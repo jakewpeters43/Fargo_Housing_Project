@@ -30,8 +30,8 @@ max_bathrooms <- 8
 min_yearbuilt <- 1901
 max_yearbuilt <- 2021
 
-FM_Market_Clean[FM_Market_Clean$`Book Section`=="Twinhomes",]$`Book Section`<-"Twinhome"
-FM_Market_Clean[FM_Market_Clean$`Style`=="1 1/2 Stor",]$`Style` <- "1&frac12 Story"
+#FM_Market_Clean[FM_Market_Clean$`Book Section`=="Twinhomes",]$`Book Section`<-"Twinhome"
+#FM_Market_Clean[FM_Market_Clean$`Style`=="1 1/2 Stor",]$`Style Clean` <- "1&frac12 Story"
 
 
 #========================================================================================

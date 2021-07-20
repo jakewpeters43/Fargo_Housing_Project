@@ -46,7 +46,8 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                             pickerInput(
                                 inputId = "style",
                                 label = "House style:",
-                                choices = c("1 Story", "1 1/2 Story"="1&frac12 Story", "2 Story", "3 Story", "Bi Level", "3 Level", "4 Level"),
+                                #choices = c("1 Story", "1 1/2 Story"="1&frac12 Story", "2 Story", "3 Story", "Bi Level", "3 Level", "4 Level"),
+                                choices = unique(FM_Market_Clean$`Style`),
                                 selected = unique(FM_Market_Clean$`Style`),
                                 options = list(`actions-box` = TRUE),
                                 multiple = TRUE
@@ -171,10 +172,12 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
     
         tabPanel("Price Predictor",
             fillPage(
-                titlePanel("Price Predictor"),
+                titlePanel(h1("Price Predictor", align="center")),
                 
-                mainPanel(
-                    style="overflow-y:scroll; max-height:70vh",
+                fluidRow(column(
+                    align="center",
+                    width=12,
+                    style="overflow-y:scroll; max-height:70vh;",
                             
                         pickerInput(
                             inputId = "city1",
@@ -218,7 +221,8 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                             min = 1800,
                             max = 2021,
                             value = 2021,
-                            step = 1
+                            step = 1,
+                            sep=""
                         ),
                             
                         numericInput(
@@ -384,26 +388,33 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                             multiple = FALSE
                         ),
                         
-                        pickerInput(
-                            inputId = "booksection1",
-                            label = "House Type:",
-                            choices = unique(FM_Market_Clean$`Book Section`),
-                            selected = "Single Family Residence",
-                            options = list(`actions-box` = TRUE),
-                            multiple = FALSE
-                        ),
+                    pickerInput(
+                        inputId = "booksection1",
+                        label = "House Type:",
+                        choices = unique(FM_Market_Clean$`Book Section`),
+                        selected = "Single Family Residence",
+                        options = list(`actions-box` = TRUE),
+                        multiple = FALSE
+                    ),
                         
-                        pickerInput(
-                            inputId = "exterior1",
-                            label = "House Type:",
-                            choices = unique(FM_Market_Clean$`Exterior`),
-                            selected = "Vinyl Siding",
-                            options = list(`actions-box` = TRUE),
-                            multiple = FALSE
-                        ),
+                    pickerInput(
+                        inputId = "exterior1",
+                        label = "House Type:",
+                        choices = unique(FM_Market_Clean$`Exterior`),
+                        selected = "Vinyl Siding",
+                        options = list(`actions-box` = TRUE),
+                        multiple = FALSE
+                    )
+                )),
                 
+                fluidRow(
+                    column(width=4),
+                    column(
+                        width=4,
+                        align="center",
                         actionButton("submit", "Submit", class = "btn-primary"),
                         verbatimTextOutput("result")
+                    )
                 )
             )
         )
