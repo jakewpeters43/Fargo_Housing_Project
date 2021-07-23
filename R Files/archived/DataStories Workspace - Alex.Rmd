@@ -6,24 +6,26 @@ output: html_document
 ---
 
 ```{r}
+#INITIALIZATION
+#Run before other chunks
+
+##Loads in necessary libraries
 library(tidyverse)
 library(scales)
 library(lubridate)
-```
 
-```{r}
-FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv", col_types = cols(
+#Loads datasets
+FM_Housing_Clean <- read_csv("../Data/FM_Housing_Clean.csv.gz", col_types = cols(
   `Lease Term` = col_character(),
   `Water Frontage Length` = col_integer(),
   `Postal Code` = col_character(),
   `Address #` = col_character(),
   `Occupant Phone 2` = col_character(),
   `Finance` = col_character(),
-  `Sheyenne Unpd` = col_character()
+  `Sheyenne Unpd` = col_character(),
+  `Garage Type` = col_character()
 ))
-
 FM_Agg_Monthly <- read_csv("../Data/FM_Agg_Monthly.csv")
-
 
 #Preprocessing for data
 FM_Housing_Clean$`Sales Period` = floor_date(FM_Housing_Clean$`Sold Date`, "month")
