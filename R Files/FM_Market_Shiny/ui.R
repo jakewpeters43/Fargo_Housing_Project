@@ -2,7 +2,7 @@
 shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.css",
     navbarPage(
         inverse = TRUE,
-        "Fargo-Moorhead Housing",
+        "Fargo-Moorhead Housing",  
 # the page with our FM housing map display
         tabPanel(
             "House Finder",
@@ -11,7 +11,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                     sidebarPanel(
                         style=
                             "height: calc(100vh - 80px);
-                            overflow-y: scroll;
+                            overflow: scroll;
                             margin-right: -2vh;
                             padding-right: 2vh;",
                         
@@ -181,7 +181,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                 fluidRow(column(
                     align="center",
                     width=12,
-                    style="overflow-y:scroll; max-height:calc(90vh - 200px);",
+                    style="overflow:scroll; max-height:calc(90vh - 200px);",
                             
                         pickerInput(
                             inputId = "city1",
@@ -310,7 +310,7 @@ shinyUI(tags$head(tags$link(rel = "stylesheet", type = "text/css", href = "main.
                             options = list(`actions-box` = TRUE),
                             multiple = FALSE
                         ),
-        
+                        
                         pickerInput(
                             inputId = "pool1",
                             label = "Pool: ",
